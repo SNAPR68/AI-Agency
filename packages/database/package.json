@@ -1,0 +1,8 @@
+{
+  "name": "@agency/database",
+  "private": true,
+  "scripts": {
+    "migrate": "echo 'Run migrations with your chosen Postgres toolchain.'"
+  }
+}
+

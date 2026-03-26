@@ -1,0 +1,16 @@
+{
+  "name": "agency",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @agency/web",
+    "build": "npm run build --workspace @agency/web",
+    "typecheck": "npm run typecheck --workspace @agency/web",
+    "db:migrate": "bash scripts/db/migrate.sh",
+    "db:seed": "bash scripts/db/seed.sh",
+    "db:setup": "npm run db:migrate && npm run db:seed"
+  }
+}

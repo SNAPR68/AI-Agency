@@ -1,0 +1,6 @@
+{
+  "name": "@agency/types",
+  "private": true,
+  "types": "src/index.ts"
+}
+
