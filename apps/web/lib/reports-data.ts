@@ -1,7 +1,20 @@
 import "server-only";
 
-import { getCustomerOpsNarrative, listCxIssues, listRetentionSignals, listSupportClusters } from "./customer-ops-data";
-import { listTrendSignals, listCompetitorObservations } from "./market-intelligence-data";
+import {
+  getCustomerOpsNarrative,
+  listCxIssues,
+  listCxIssuesAsync,
+  listRetentionSignals,
+  listRetentionSignalsAsync,
+  listSupportClusters,
+  listSupportClustersAsync
+} from "./customer-ops-data";
+import {
+  listCompetitorObservations,
+  listCompetitorObservationsAsync,
+  listTrendSignals,
+  listTrendSignalsAsync
+} from "./market-intelligence-data";
 import {
   getLatestWorkspaceBrief,
   getLatestWorkspaceBriefAsync,
@@ -148,11 +161,11 @@ export async function getReportsDashboardDataAsync(
   const approvals = await listApprovalItemsAsync(brandId);
   const publishJobs = await listPublishJobsAsync(brandId);
   const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
-  const retention = listRetentionSignals(brandId);
-  const cxIssues = listCxIssues(brandId);
-  const support = listSupportClusters(brandId);
-  const trends = listTrendSignals(brandId);
-  const competitors = listCompetitorObservations(brandId);
+  const retention = await listRetentionSignalsAsync(brandId);
+  const cxIssues = await listCxIssuesAsync(brandId);
+  const support = await listSupportClustersAsync(brandId);
+  const trends = await listTrendSignalsAsync(brandId);
+  const competitors = await listCompetitorObservationsAsync(brandId);
 
   return {
     brandName: workspace.name,
@@ -292,7 +305,7 @@ export async function buildFounderReportMarkdownAsync(brandId: string) {
   const publishJobs = await listPublishJobsAsync(brandId);
   const failedJobs = publishJobs.filter((job) => job.status === "failed");
   const scheduledJobs = publishJobs.filter((job) => job.status === "scheduled");
-  const retention = listRetentionSignals(brandId).filter(
+  const retention = (await listRetentionSignalsAsync(brandId)).filter(
     (item) => item.churnRisk === "high" || item.state === "flagged"
   );
 
@@ -424,11 +437,11 @@ export async function buildTeamReportMarkdownAsync(brandId: string) {
   const approvals = await listApprovalItemsAsync(brandId);
   const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
   const publishJobs = await listPublishJobsAsync(brandId);
-  const trends = listTrendSignals(brandId);
-  const competitors = listCompetitorObservations(brandId);
-  const retention = listRetentionSignals(brandId);
-  const cxIssues = listCxIssues(brandId);
-  const support = listSupportClusters(brandId);
+  const trends = await listTrendSignalsAsync(brandId);
+  const competitors = await listCompetitorObservationsAsync(brandId);
+  const retention = await listRetentionSignalsAsync(brandId);
+  const cxIssues = await listCxIssuesAsync(brandId);
+  const support = await listSupportClustersAsync(brandId);
   const customerNarrative = getCustomerOpsNarrative(brandId);
 
   return [

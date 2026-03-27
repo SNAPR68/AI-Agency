@@ -1,7 +1,9 @@
 import "server-only";
 
 import {
+  createDraftFromProductAsync,
   createDraftFromProduct,
+  getBrandDraftAsync,
   getBrandDraft,
   type WorkflowDraftView
 } from "./growth-workflow-data";
@@ -11,6 +13,11 @@ import {
   updateCampaignOverride,
   updateChannelOverride
 } from "./local-persistence";
+import {
+  listSupabaseEntityOverrides,
+  setSupabaseEntityOverride
+} from "./supabase-workflow-data";
+import { shouldEnforceSupabaseHostedAccess } from "./supabase-env";
 import { getWorkspaceBrand } from "./workspace-data";
 
 type ChannelHealth = "scaling" | "watch" | "fragile";
@@ -360,6 +367,9 @@ function getAcquisitionSeed(brandId: string) {
   return acquisitionSeeds[brandId] ?? getDefaultAcquisitionSeed(brandId);
 }
 
+const channelOverrideType = "override_channel";
+const campaignOverrideType = "override_campaign";
+
 export function getAcquisitionNarrative(brandId: string) {
   return getAcquisitionSeed(brandId).narrative;
 }
@@ -374,6 +384,30 @@ export function listChannelViews(brandId: string): ChannelView[] {
       return {
         ...channel,
         state: override?.state ?? "tracking",
+        campaignsHref: buildBrandPath(brandId, "/campaigns"),
+        syncHref: `/api/brands/${brandId}/integrations/${channel.provider}/sync`,
+        campaignCount: seed.campaigns.filter((campaign) => campaign.channelId === channel.id)
+          .length
+      } satisfies ChannelView;
+    })
+    .sort((left, right) => channelRank(left) - channelRank(right));
+}
+
+export async function listChannelViewsAsync(brandId: string): Promise<ChannelView[]> {
+  const seed = getAcquisitionSeed(brandId);
+  const hostedOverrides = shouldEnforceSupabaseHostedAccess()
+    ? await listSupabaseEntityOverrides(brandId, channelOverrideType)
+    : null;
+
+  return seed.channels
+    .map((channel) => {
+      const override = shouldEnforceSupabaseHostedAccess()
+        ? hostedOverrides?.[channel.id]
+        : getChannelOverride(brandId, channel.id);
+
+      return {
+        ...channel,
+        state: override?.state === "investigating" ? "investigating" : "tracking",
         campaignsHref: buildBrandPath(brandId, "/campaigns"),
         syncHref: `/api/brands/${brandId}/integrations/${channel.provider}/sync`,
         campaignCount: seed.campaigns.filter((campaign) => campaign.channelId === channel.id)
@@ -407,6 +441,38 @@ export function listCampaignViews(brandId: string): CampaignView[] {
     .sort((left, right) => campaignRank(left) - campaignRank(right));
 }
 
+export async function listCampaignViewsAsync(brandId: string): Promise<CampaignView[]> {
+  const seed = getAcquisitionSeed(brandId);
+  const channelMap = new Map(seed.channels.map((channel) => [channel.id, channel] as const));
+  const hostedOverrides = shouldEnforceSupabaseHostedAccess()
+    ? await listSupabaseEntityOverrides(brandId, campaignOverrideType)
+    : null;
+
+  return seed.campaigns
+    .map((campaign) => {
+      const override = shouldEnforceSupabaseHostedAccess()
+        ? hostedOverrides?.[campaign.id]
+        : getCampaignOverride(brandId, campaign.id);
+      const channel = channelMap.get(campaign.channelId);
+
+      return {
+        ...campaign,
+        state:
+          override?.state === "flagged" || override?.state === "draft_linked"
+            ? override.state
+            : "new",
+        channelLabel: channel?.label ?? "Acquisition channel",
+        channelHref: buildBrandPath(brandId, "/channels"),
+        productHref: buildBrandPath(brandId, `/products/${campaign.productId}`),
+        linkedDraftId: override?.linkedDraftId,
+        linkedDraftHref: override?.linkedDraftId
+          ? buildBrandPath(brandId, `/content/drafts/${override.linkedDraftId}`)
+          : undefined
+      } satisfies CampaignView;
+    })
+    .sort((left, right) => campaignRank(left) - campaignRank(right));
+}
+
 export function setChannelState(
   brandId: string,
   channelId: string,
@@ -416,6 +482,30 @@ export function setChannelState(
     state,
     updatedAt: new Date().toISOString()
   });
+}
+
+export async function setChannelStateAsync(
+  brandId: string,
+  channelId: string,
+  state: "tracking" | "investigating"
+) {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const channel = getAcquisitionSeed(brandId).channels.find((item) => item.id === channelId);
+
+    if (!channel) {
+      return null;
+    }
+
+    return setSupabaseEntityOverride(brandId, {
+      overrideType: channelOverrideType,
+      appItemId: channelId,
+      title: channel.label,
+      state
+    });
+  }
+
+  setChannelState(brandId, channelId, state);
+  return getChannelOverride(brandId, channelId);
 }
 
 export function setCampaignState(
@@ -430,6 +520,36 @@ export function setCampaignState(
     updatedAt: new Date().toISOString(),
     linkedDraftId: current?.linkedDraftId
   });
+}
+
+export async function setCampaignStateAsync(
+  brandId: string,
+  campaignId: string,
+  state: "new" | "flagged" | "draft_linked"
+) {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const campaign = getAcquisitionSeed(brandId).campaigns.find((item) => item.id === campaignId);
+    const current = (await listSupabaseEntityOverrides(brandId, campaignOverrideType))?.[campaignId];
+
+    if (!campaign) {
+      return null;
+    }
+
+    return setSupabaseEntityOverride(brandId, {
+      overrideType: campaignOverrideType,
+      appItemId: campaignId,
+      title: campaign.name,
+      state,
+      linkedDraftId: current?.linkedDraftId,
+      metadata: {
+        productId: campaign.productId,
+        channelId: campaign.channelId
+      }
+    });
+  }
+
+  setCampaignState(brandId, campaignId, state);
+  return getCampaignOverride(brandId, campaignId);
 }
 
 export function createDraftFromCampaign(
@@ -471,4 +591,59 @@ export function createDraftFromCampaign(
   });
 
   return getBrandDraft(brandId, draft.id);
+}
+
+export async function createDraftFromCampaignAsync(
+  brandId: string,
+  campaignId: string
+): Promise<WorkflowDraftView | null> {
+  const campaign = (await listCampaignViewsAsync(brandId)).find((item) => item.id === campaignId);
+
+  if (!campaign) {
+    return null;
+  }
+
+  if (campaign.linkedDraftId) {
+    const existing = await getBrandDraftAsync(brandId, campaign.linkedDraftId);
+
+    if (existing) {
+      return existing;
+    }
+  }
+
+  const draft = await createDraftFromProductAsync(brandId, campaign.productId, {
+    title: `${campaign.name} content pack`,
+    channel: campaign.outputChannel,
+    angle: campaign.creativeAngle,
+    hook: `${campaign.creativeAngle}: give the team a sharper opening line before this campaign softens.`,
+    caption: `${campaign.recommendation} Keep the message anchored in ${campaign.summary.toLowerCase()}`,
+    script:
+      `${campaign.summary} Build the draft around ${campaign.creativeAngle.toLowerCase()}, then land on the operating move: ${campaign.recommendation}`
+  });
+
+  if (!draft) {
+    return null;
+  }
+
+  if (shouldEnforceSupabaseHostedAccess()) {
+    await setSupabaseEntityOverride(brandId, {
+      overrideType: campaignOverrideType,
+      appItemId: campaignId,
+      title: campaign.name,
+      state: "draft_linked",
+      linkedDraftId: draft.id,
+      metadata: {
+        productId: campaign.productId,
+        channelId: campaign.channelId
+      }
+    });
+  } else {
+    updateCampaignOverride(brandId, campaignId, {
+      state: "draft_linked",
+      updatedAt: new Date().toISOString(),
+      linkedDraftId: draft.id
+    });
+  }
+
+  return await getBrandDraftAsync(brandId, draft.id);
 }

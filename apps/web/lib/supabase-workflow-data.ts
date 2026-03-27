@@ -84,6 +84,12 @@ type HostedOpportunityInput = {
   productId?: string;
 };
 
+export type SupabaseStateOverride = {
+  state: string;
+  updatedAt: string;
+  linkedDraftId?: string;
+};
+
 const draftStatuses = new Set<PersistedDraft["status"]>([
   "draft",
   "ready_for_approval",
@@ -347,6 +353,33 @@ async function getOpportunityRow(
       .select("id, type, title, priority_score, confidence_score, status, evidence_json")
       .eq("brand_id", brandUuid)
       .contains("evidence_json", { appOpportunityId })
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data as OpportunityRow;
+  } catch {
+    return null;
+  }
+}
+
+async function getEntityOverrideRow(
+  brandUuid: string,
+  overrideType: string,
+  appItemId: string
+) {
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from("opportunities")
+      .select("id, type, title, priority_score, confidence_score, status, evidence_json")
+      .eq("brand_id", brandUuid)
+      .eq("type", overrideType)
+      .contains("evidence_json", { appItemId })
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -1065,6 +1098,119 @@ export async function setSupabaseOpportunityStatus(
       status,
       updatedAt: new Date().toISOString(),
       linkedDraftId
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function listSupabaseEntityOverrides(
+  brandId: string,
+  overrideType: string
+): Promise<Record<string, SupabaseStateOverride> | null> {
+  const context = await getWorkflowContext(brandId);
+
+  if (!context) {
+    return null;
+  }
+
+  try {
+    const { data, error } = await context.supabase
+      .from("opportunities")
+      .select("id, type, title, priority_score, confidence_score, status, evidence_json")
+      .eq("brand_id", context.brand.id)
+      .eq("type", overrideType)
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      return null;
+    }
+
+    const overrides: Record<string, SupabaseStateOverride> = {};
+
+    for (const item of (data ?? []) as OpportunityRow[]) {
+      const evidence = item.evidence_json ?? {};
+      const appItemId = typeof evidence.appItemId === "string" ? evidence.appItemId : null;
+
+      if (!appItemId) {
+        continue;
+      }
+
+      overrides[appItemId] = {
+        state: typeof item.status === "string" ? item.status : "open",
+        updatedAt: new Date().toISOString(),
+        linkedDraftId:
+          typeof evidence.linkedDraftId === "string" ? evidence.linkedDraftId : undefined
+      };
+    }
+
+    return overrides;
+  } catch {
+    return null;
+  }
+}
+
+export async function setSupabaseEntityOverride(
+  brandId: string,
+  input: {
+    overrideType: string;
+    appItemId: string;
+    title: string;
+    state: string;
+    linkedDraftId?: string;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<SupabaseStateOverride | null> {
+  const context = await getWorkflowContext(brandId);
+
+  if (!context) {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+  const existing = await getEntityOverrideRow(context.brand.id, input.overrideType, input.appItemId);
+  const evidence = {
+    appItemId: input.appItemId,
+    linkedDraftId: input.linkedDraftId ?? null,
+    ...(input.metadata ?? {})
+  };
+
+  try {
+    if (existing) {
+      const { error } = await context.supabase
+        .from("opportunities")
+        .update({
+          title: input.title,
+          status: input.state,
+          evidence_json: evidence,
+          updated_at: now
+        })
+        .eq("brand_id", context.brand.id)
+        .eq("id", existing.id);
+
+      if (error) {
+        return null;
+      }
+    } else {
+      const { error } = await context.supabase
+        .from("opportunities")
+        .insert({
+          brand_id: context.brand.id,
+          type: input.overrideType,
+          title: input.title,
+          status: input.state,
+          evidence_json: evidence
+        });
+
+      if (error) {
+        return null;
+      }
+    }
+
+    return {
+      state: input.state,
+      updatedAt: now,
+      linkedDraftId: input.linkedDraftId
     };
   } catch {
     return null;

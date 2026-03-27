@@ -5,7 +5,7 @@ import {
 import { WorkspacePage } from "../../../../components/workspace-page";
 import {
   getAcquisitionNarrative,
-  listChannelViews
+  listChannelViewsAsync
 } from "../../../../lib/acquisition-data";
 
 type ChannelsPageProps = {
@@ -16,7 +16,7 @@ type ChannelsPageProps = {
 
 export default async function ChannelsPage({ params }: ChannelsPageProps) {
   const { brandId } = await params;
-  const channels = listChannelViews(brandId);
+  const channels = await listChannelViewsAsync(brandId);
 
   return (
     <WorkspacePage

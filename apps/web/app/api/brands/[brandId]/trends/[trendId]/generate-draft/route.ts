@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createDraftFromTrend } from "../../../../../../../lib/market-intelligence-data";
+import { createDraftFromTrendAsync } from "../../../../../../../lib/market-intelligence-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
@@ -34,7 +34,7 @@ export async function POST(
     );
   }
 
-  const draft = createDraftFromTrend(brandId, trendId);
+  const draft = await createDraftFromTrendAsync(brandId, trendId);
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath)
       ? nextPath

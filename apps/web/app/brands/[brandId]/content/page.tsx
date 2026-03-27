@@ -11,7 +11,7 @@ import {
   listBrandOpportunitiesAsync,
   listBrandProductsAsync
 } from "../../../../lib/growth-workflow-data";
-import { listTrendSignals } from "../../../../lib/market-intelligence-data";
+import { listTrendSignalsAsync } from "../../../../lib/market-intelligence-data";
 import { formatDraftStatusLabel } from "../../../../lib/workflow-execution-data";
 
 type ContentPageProps = {
@@ -50,7 +50,7 @@ export default async function ContentPage({
   const products = await listBrandProductsAsync(brandId);
   const starterOpportunities = opportunities.slice(0, 3);
   const starterProducts = products.slice(0, 2);
-  const savedTrends = listTrendSignals(brandId).slice(0, 3);
+  const savedTrends = (await listTrendSignalsAsync(brandId)).slice(0, 3);
 
   return (
     <WorkspacePage

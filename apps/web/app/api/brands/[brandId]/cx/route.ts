@@ -4,7 +4,7 @@ import {
 } from "../../../../../lib/api";
 import {
   getCustomerOpsNarrative,
-  listCxIssues
+  listCxIssuesAsync
 } from "../../../../../lib/customer-ops-data";
 import { getAuthorizedBrandState } from "../../../../../lib/session";
 
@@ -25,6 +25,6 @@ export async function GET(_request: Request, { params }: CxRouteProps) {
   return createApiResponse({
     brandId,
     narrative: getCustomerOpsNarrative(brandId),
-    issues: listCxIssues(brandId)
+    issues: await listCxIssuesAsync(brandId)
   });
 }

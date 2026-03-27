@@ -5,7 +5,7 @@ import {
 import { WorkspacePage } from "../../../../components/workspace-page";
 import {
   getCustomerOpsNarrative,
-  listCxIssues
+  listCxIssuesAsync
 } from "../../../../lib/customer-ops-data";
 
 type CxOpsPageProps = {
@@ -40,7 +40,7 @@ function stateTone(state: string): PresentationTone {
 
 export default async function CxOpsPage({ params }: CxOpsPageProps) {
   const { brandId } = await params;
-  const issues = listCxIssues(brandId);
+  const issues = await listCxIssuesAsync(brandId);
   const primaryIssue = issues[0];
 
   return (

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setCampaignState } from "../../../../../../../lib/acquisition-data";
+import { setCampaignStateAsync } from "../../../../../../../lib/acquisition-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
@@ -34,7 +34,7 @@ export async function POST(
     );
   }
 
-  setCampaignState(brandId, campaignId, "flagged");
+  await setCampaignStateAsync(brandId, campaignId, "flagged");
 
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath) ? nextPath : `/brands/${brandId}/campaigns`;

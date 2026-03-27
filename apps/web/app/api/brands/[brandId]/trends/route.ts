@@ -4,7 +4,7 @@ import {
 } from "../../../../../lib/api";
 import {
   getMarketNarrative,
-  listTrendSignals
+  listTrendSignalsAsync
 } from "../../../../../lib/market-intelligence-data";
 import { getAuthorizedBrandState } from "../../../../../lib/session";
 
@@ -25,6 +25,6 @@ export async function GET(_request: Request, { params }: TrendsRouteProps) {
   return createApiResponse({
     brandId,
     narrative: getMarketNarrative(brandId),
-    trends: listTrendSignals(brandId)
+    trends: await listTrendSignalsAsync(brandId)
   });
 }

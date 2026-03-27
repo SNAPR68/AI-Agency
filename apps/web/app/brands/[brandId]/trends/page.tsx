@@ -5,7 +5,7 @@ import {
 import { WorkspacePage } from "../../../../components/workspace-page";
 import {
   getMarketNarrative,
-  listTrendSignals
+  listTrendSignalsAsync
 } from "../../../../lib/market-intelligence-data";
 
 type TrendsPageProps = {
@@ -40,7 +40,7 @@ function stateTone(state: string): PresentationTone {
 
 export default async function TrendsPage({ params }: TrendsPageProps) {
   const { brandId } = await params;
-  const trends = listTrendSignals(brandId);
+  const trends = await listTrendSignalsAsync(brandId);
   const primaryTrend = trends[0];
 
   return (

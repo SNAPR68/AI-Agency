@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createDraftFromCompetitor } from "../../../../../../../lib/market-intelligence-data";
+import { createDraftFromCompetitorAsync } from "../../../../../../../lib/market-intelligence-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
@@ -34,7 +34,7 @@ export async function POST(
     );
   }
 
-  const draft = createDraftFromCompetitor(brandId, competitorId);
+  const draft = await createDraftFromCompetitorAsync(brandId, competitorId);
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath)
       ? nextPath

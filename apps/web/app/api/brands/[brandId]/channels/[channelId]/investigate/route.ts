@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setChannelState } from "../../../../../../../lib/acquisition-data";
+import { setChannelStateAsync } from "../../../../../../../lib/acquisition-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
@@ -34,7 +34,7 @@ export async function POST(
     );
   }
 
-  setChannelState(brandId, channelId, "investigating");
+  await setChannelStateAsync(brandId, channelId, "investigating");
 
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath) ? nextPath : `/brands/${brandId}/channels`;

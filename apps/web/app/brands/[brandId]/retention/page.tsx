@@ -5,7 +5,7 @@ import {
 import { WorkspacePage } from "../../../../components/workspace-page";
 import {
   getCustomerOpsNarrative,
-  listRetentionSignals
+  listRetentionSignalsAsync
 } from "../../../../lib/customer-ops-data";
 
 type RetentionPageProps = {
@@ -44,7 +44,7 @@ function stateTone(state: string): PresentationTone {
 
 export default async function RetentionPage({ params }: RetentionPageProps) {
   const { brandId } = await params;
-  const items = listRetentionSignals(brandId);
+  const items = await listRetentionSignalsAsync(brandId);
   const primaryItem = items[0];
 
   return (

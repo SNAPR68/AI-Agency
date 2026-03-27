@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createRetentionDraft } from "../../../../../../../lib/customer-ops-data";
+import { createRetentionDraftAsync } from "../../../../../../../lib/customer-ops-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
@@ -34,7 +34,7 @@ export async function POST(
     );
   }
 
-  const draft = createRetentionDraft(brandId, itemId);
+  const draft = await createRetentionDraftAsync(brandId, itemId);
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath)
       ? nextPath

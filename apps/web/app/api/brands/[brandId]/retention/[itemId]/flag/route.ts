@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setRetentionState } from "../../../../../../../lib/customer-ops-data";
+import { setRetentionStateAsync } from "../../../../../../../lib/customer-ops-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
@@ -34,7 +34,7 @@ export async function POST(
     );
   }
 
-  setRetentionState(brandId, itemId, "flagged");
+  await setRetentionStateAsync(brandId, itemId, "flagged");
 
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath) ? nextPath : `/brands/${brandId}/retention`;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setCompetitorState } from "../../../../../../../lib/market-intelligence-data";
+import { setCompetitorStateAsync } from "../../../../../../../lib/market-intelligence-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
@@ -34,7 +34,7 @@ export async function POST(
     );
   }
 
-  setCompetitorState(brandId, competitorId, "acted");
+  await setCompetitorStateAsync(brandId, competitorId, "acted");
 
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath)

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setTrendState } from "../../../../../../../lib/market-intelligence-data";
+import { setTrendStateAsync } from "../../../../../../../lib/market-intelligence-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
@@ -34,7 +34,7 @@ export async function POST(
     );
   }
 
-  setTrendState(brandId, trendId, "saved");
+  await setTrendStateAsync(brandId, trendId, "saved");
 
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath) ? nextPath : `/brands/${brandId}/trends`;

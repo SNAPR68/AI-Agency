@@ -5,7 +5,7 @@ import {
 import { WorkspacePage } from "../../../../components/workspace-page";
 import {
   getMarketNarrative,
-  listCompetitorObservations
+  listCompetitorObservationsAsync
 } from "../../../../lib/market-intelligence-data";
 
 type CompetitorsPageProps = {
@@ -36,7 +36,7 @@ function stateTone(state: string): PresentationTone {
 
 export default async function CompetitorsPage({ params }: CompetitorsPageProps) {
   const { brandId } = await params;
-  const competitors = listCompetitorObservations(brandId);
+  const competitors = await listCompetitorObservationsAsync(brandId);
   const primaryObservation = competitors[0];
 
   return (

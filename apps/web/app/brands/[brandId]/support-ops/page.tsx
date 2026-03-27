@@ -5,7 +5,7 @@ import {
 import { WorkspacePage } from "../../../../components/workspace-page";
 import {
   getCustomerOpsNarrative,
-  listSupportClusters
+  listSupportClustersAsync
 } from "../../../../lib/customer-ops-data";
 
 type SupportOpsPageProps = {
@@ -36,7 +36,7 @@ function stateTone(state: string): PresentationTone {
 
 export default async function SupportOpsPage({ params }: SupportOpsPageProps) {
   const { brandId } = await params;
-  const clusters = listSupportClusters(brandId);
+  const clusters = await listSupportClustersAsync(brandId);
   const primaryCluster = clusters[0];
 
   return (

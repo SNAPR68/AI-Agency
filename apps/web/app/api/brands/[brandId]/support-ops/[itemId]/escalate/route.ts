@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setSupportState } from "../../../../../../../lib/customer-ops-data";
+import { setSupportStateAsync } from "../../../../../../../lib/customer-ops-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
@@ -34,7 +34,7 @@ export async function POST(
     );
   }
 
-  setSupportState(brandId, itemId, "escalated");
+  await setSupportStateAsync(brandId, itemId, "escalated");
 
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath)

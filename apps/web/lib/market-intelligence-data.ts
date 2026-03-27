@@ -1,7 +1,9 @@
 import "server-only";
 
 import {
+  createDraftFromProductAsync,
   createDraftFromProduct,
+  getBrandDraftAsync,
   getBrandDraft,
   type WorkflowDraftView
 } from "./growth-workflow-data";
@@ -11,6 +13,11 @@ import {
   updateCompetitorOverride,
   updateTrendOverride
 } from "./local-persistence";
+import {
+  listSupabaseEntityOverrides,
+  setSupabaseEntityOverride
+} from "./supabase-workflow-data";
+import { shouldEnforceSupabaseHostedAccess } from "./supabase-env";
 import { getWorkspaceBrand } from "./workspace-data";
 
 type TrendStatus = "emerging" | "hot" | "crowded";
@@ -291,6 +298,9 @@ function getMarketSeed(brandId: string) {
   return marketSeeds[brandId] ?? getDefaultMarketSeed(brandId);
 }
 
+const trendOverrideType = "override_trend";
+const competitorOverrideType = "override_competitor";
+
 export function getMarketNarrative(brandId: string) {
   return getMarketSeed(brandId).narrative;
 }
@@ -302,6 +312,31 @@ export function listTrendSignals(brandId: string): TrendSignalView[] {
     return {
       ...trend,
       state: override?.state ?? "new",
+      productHref: buildBrandPath(brandId, `/products/${trend.productId}`),
+      linkedDraftId: override?.linkedDraftId,
+      linkedDraftHref: override?.linkedDraftId
+        ? buildBrandPath(brandId, `/content/drafts/${override.linkedDraftId}`)
+        : undefined
+    };
+  });
+}
+
+export async function listTrendSignalsAsync(brandId: string): Promise<TrendSignalView[]> {
+  const hostedOverrides = shouldEnforceSupabaseHostedAccess()
+    ? await listSupabaseEntityOverrides(brandId, trendOverrideType)
+    : null;
+
+  return getMarketSeed(brandId).trends.map((trend) => {
+    const override = shouldEnforceSupabaseHostedAccess()
+      ? hostedOverrides?.[trend.id]
+      : getTrendOverride(brandId, trend.id);
+
+    return {
+      ...trend,
+      state:
+        override?.state === "saved" || override?.state === "acted"
+          ? override.state
+          : "new",
       productHref: buildBrandPath(brandId, `/products/${trend.productId}`),
       linkedDraftId: override?.linkedDraftId,
       linkedDraftHref: override?.linkedDraftId
@@ -328,6 +363,34 @@ export function listCompetitorObservations(brandId: string): CompetitorObservati
   });
 }
 
+export async function listCompetitorObservationsAsync(
+  brandId: string
+): Promise<CompetitorObservationView[]> {
+  const hostedOverrides = shouldEnforceSupabaseHostedAccess()
+    ? await listSupabaseEntityOverrides(brandId, competitorOverrideType)
+    : null;
+
+  return getMarketSeed(brandId).competitors.map((observation) => {
+    const override = shouldEnforceSupabaseHostedAccess()
+      ? hostedOverrides?.[observation.id]
+      : getCompetitorOverride(brandId, observation.id);
+
+    return {
+      ...observation,
+      state:
+        override?.state === "saved" || override?.state === "acted"
+          ? override.state
+          : "new",
+      productHref: buildBrandPath(brandId, `/products/${observation.productId}`),
+      linkedDraftId: override?.linkedDraftId,
+      linkedDraftHref: override?.linkedDraftId
+        ? buildBrandPath(brandId, `/content/drafts/${override.linkedDraftId}`)
+        : undefined,
+      lastSeenLabel: formatTimestampLabel(observation.lastSeenAt)
+    };
+  });
+}
+
 export function setTrendState(
   brandId: string,
   trendId: string,
@@ -342,6 +405,36 @@ export function setTrendState(
   });
 }
 
+export async function setTrendStateAsync(
+  brandId: string,
+  trendId: string,
+  state: "new" | "saved" | "acted"
+) {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const trend = getMarketSeed(brandId).trends.find((item) => item.id === trendId);
+    const current = (await listSupabaseEntityOverrides(brandId, trendOverrideType))?.[trendId];
+
+    if (!trend) {
+      return null;
+    }
+
+    return setSupabaseEntityOverride(brandId, {
+      overrideType: trendOverrideType,
+      appItemId: trendId,
+      title: trend.title,
+      state,
+      linkedDraftId: current?.linkedDraftId,
+      metadata: {
+        productId: trend.productId,
+        platform: trend.platform
+      }
+    });
+  }
+
+  setTrendState(brandId, trendId, state);
+  return getTrendOverride(brandId, trendId);
+}
+
 export function setCompetitorState(
   brandId: string,
   competitorId: string,
@@ -354,6 +447,37 @@ export function setCompetitorState(
     updatedAt: new Date().toISOString(),
     linkedDraftId: current?.linkedDraftId
   });
+}
+
+export async function setCompetitorStateAsync(
+  brandId: string,
+  competitorId: string,
+  state: "new" | "saved" | "acted"
+) {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const observation = getMarketSeed(brandId).competitors.find((item) => item.id === competitorId);
+    const current =
+      (await listSupabaseEntityOverrides(brandId, competitorOverrideType))?.[competitorId];
+
+    if (!observation) {
+      return null;
+    }
+
+    return setSupabaseEntityOverride(brandId, {
+      overrideType: competitorOverrideType,
+      appItemId: competitorId,
+      title: observation.title,
+      state,
+      linkedDraftId: current?.linkedDraftId,
+      metadata: {
+        competitorName: observation.competitorName,
+        productId: observation.productId
+      }
+    });
+  }
+
+  setCompetitorState(brandId, competitorId, state);
+  return getCompetitorOverride(brandId, competitorId);
 }
 
 export function createDraftFromTrend(
@@ -396,6 +520,60 @@ export function createDraftFromTrend(
   return draft;
 }
 
+export async function createDraftFromTrendAsync(
+  brandId: string,
+  trendId: string
+): Promise<WorkflowDraftView | null> {
+  const trend = (await listTrendSignalsAsync(brandId)).find((item) => item.id === trendId);
+
+  if (!trend) {
+    return null;
+  }
+
+  if (trend.linkedDraftId) {
+    const existing = await getBrandDraftAsync(brandId, trend.linkedDraftId);
+
+    if (existing) {
+      return existing;
+    }
+  }
+
+  const draft = await createDraftFromProductAsync(brandId, trend.productId, {
+    title: `${trend.title} response draft`,
+    channel: trend.recommendedFormat,
+    angle: trend.responseAngle,
+    hook: `Take the ${trend.title.toLowerCase()} signal and translate it into a stronger product story.`,
+    caption: `${trend.opportunity} ${trend.evidence}`,
+    script: `Open with the format or behavior that is working on ${trend.platform}, adapt it into a brand-safe execution, and land on ${trend.responseAngle}`
+  });
+
+  if (!draft) {
+    return null;
+  }
+
+  if (shouldEnforceSupabaseHostedAccess()) {
+    await setSupabaseEntityOverride(brandId, {
+      overrideType: trendOverrideType,
+      appItemId: trendId,
+      title: trend.title,
+      state: "acted",
+      linkedDraftId: draft.id,
+      metadata: {
+        productId: trend.productId,
+        platform: trend.platform
+      }
+    });
+  } else {
+    updateTrendOverride(brandId, trendId, {
+      state: "acted",
+      updatedAt: new Date().toISOString(),
+      linkedDraftId: draft.id
+    });
+  }
+
+  return await getBrandDraftAsync(brandId, draft.id);
+}
+
 export function createDraftFromCompetitor(
   brandId: string,
   competitorId: string
@@ -436,4 +614,60 @@ export function createDraftFromCompetitor(
   });
 
   return draft;
+}
+
+export async function createDraftFromCompetitorAsync(
+  brandId: string,
+  competitorId: string
+): Promise<WorkflowDraftView | null> {
+  const observation = (await listCompetitorObservationsAsync(brandId)).find(
+    (item) => item.id === competitorId
+  );
+
+  if (!observation) {
+    return null;
+  }
+
+  if (observation.linkedDraftId) {
+    const existing = await getBrandDraftAsync(brandId, observation.linkedDraftId);
+
+    if (existing) {
+      return existing;
+    }
+  }
+
+  const draft = await createDraftFromProductAsync(brandId, observation.productId, {
+    title: `${observation.competitorName} counter-position draft`,
+    channel: "Short-form response brief",
+    angle: observation.responseAngle,
+    hook: `Answer the category pressure from ${observation.competitorName} without copying the category's weakest habits.`,
+    caption: `${observation.implication} ${observation.responseAngle}`,
+    script: `Start with what ${observation.competitorName} is doing, explain why it matters, then pivot into a stronger brand-native answer tied to the product story.`
+  });
+
+  if (!draft) {
+    return null;
+  }
+
+  if (shouldEnforceSupabaseHostedAccess()) {
+    await setSupabaseEntityOverride(brandId, {
+      overrideType: competitorOverrideType,
+      appItemId: competitorId,
+      title: observation.title,
+      state: "acted",
+      linkedDraftId: draft.id,
+      metadata: {
+        competitorName: observation.competitorName,
+        productId: observation.productId
+      }
+    });
+  } else {
+    updateCompetitorOverride(brandId, competitorId, {
+      state: "acted",
+      updatedAt: new Date().toISOString(),
+      linkedDraftId: draft.id
+    });
+  }
+
+  return await getBrandDraftAsync(brandId, draft.id);
 }

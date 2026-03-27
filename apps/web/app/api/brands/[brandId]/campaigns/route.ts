@@ -1,7 +1,7 @@
 import { createApiError, createApiResponse } from "../../../../../lib/api";
 import {
   getAcquisitionNarrative,
-  listCampaignViews
+  listCampaignViewsAsync
 } from "../../../../../lib/acquisition-data";
 import { getAuthorizedBrandState } from "../../../../../lib/session";
 
@@ -21,6 +21,6 @@ export async function GET(_request: Request, { params }: CampaignsRouteProps) {
 
   return createApiResponse({
     narrative: getAcquisitionNarrative(brandId),
-    items: listCampaignViews(brandId)
+    items: await listCampaignViewsAsync(brandId)
   });
 }

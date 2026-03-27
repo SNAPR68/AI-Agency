@@ -1,7 +1,9 @@
 import "server-only";
 
 import {
+  createDraftFromProductAsync,
   createDraftFromProduct,
+  getBrandDraftAsync,
   getBrandDraft,
   type WorkflowDraftView
 } from "./growth-workflow-data";
@@ -13,6 +15,11 @@ import {
   updateRetentionOverride,
   updateSupportOverride
 } from "./local-persistence";
+import {
+  listSupabaseEntityOverrides,
+  setSupabaseEntityOverride
+} from "./supabase-workflow-data";
+import { shouldEnforceSupabaseHostedAccess } from "./supabase-env";
 import { getWorkspaceBrand } from "./workspace-data";
 
 type RetentionSeed = {
@@ -329,6 +336,10 @@ function getCustomerOpsSeed(brandId: string) {
   return customerOpsSeeds[brandId] ?? getDefaultCustomerOpsSeed(brandId);
 }
 
+const retentionOverrideType = "override_retention";
+const cxOverrideType = "override_cx";
+const supportOverrideType = "override_support";
+
 export function getCustomerOpsNarrative(brandId: string) {
   return getCustomerOpsSeed(brandId).narrative;
 }
@@ -340,6 +351,33 @@ export function listRetentionSignals(brandId: string): RetentionSignalView[] {
     return {
       ...item,
       state: override?.state ?? "new",
+      productHref: buildBrandPath(brandId, `/products/${item.productId}`),
+      linkedDraftId: override?.linkedDraftId,
+      linkedDraftHref: override?.linkedDraftId
+        ? buildBrandPath(brandId, `/content/drafts/${override.linkedDraftId}`)
+        : undefined
+    };
+  });
+}
+
+export async function listRetentionSignalsAsync(
+  brandId: string
+): Promise<RetentionSignalView[]> {
+  const hostedOverrides = shouldEnforceSupabaseHostedAccess()
+    ? await listSupabaseEntityOverrides(brandId, retentionOverrideType)
+    : null;
+
+  return getCustomerOpsSeed(brandId).retention.map((item) => {
+    const override = shouldEnforceSupabaseHostedAccess()
+      ? hostedOverrides?.[item.id]
+      : getRetentionOverride(brandId, item.id);
+
+    return {
+      ...item,
+      state:
+        override?.state === "flagged" || override?.state === "planned" || override?.state === "acted"
+          ? override.state
+          : "new",
       productHref: buildBrandPath(brandId, `/products/${item.productId}`),
       linkedDraftId: override?.linkedDraftId,
       linkedDraftHref: override?.linkedDraftId
@@ -365,6 +403,31 @@ export function listCxIssues(brandId: string): CxIssueView[] {
   });
 }
 
+export async function listCxIssuesAsync(brandId: string): Promise<CxIssueView[]> {
+  const hostedOverrides = shouldEnforceSupabaseHostedAccess()
+    ? await listSupabaseEntityOverrides(brandId, cxOverrideType)
+    : null;
+
+  return getCustomerOpsSeed(brandId).cx.map((item) => {
+    const override = shouldEnforceSupabaseHostedAccess()
+      ? hostedOverrides?.[item.id]
+      : getCxOverride(brandId, item.id);
+
+    return {
+      ...item,
+      state:
+        override?.state === "assigned" || override?.state === "resolved"
+          ? override.state
+          : "open",
+      productHref: buildBrandPath(brandId, `/products/${item.productId}`),
+      linkedDraftId: override?.linkedDraftId,
+      linkedDraftHref: override?.linkedDraftId
+        ? buildBrandPath(brandId, `/content/drafts/${override.linkedDraftId}`)
+        : undefined
+    };
+  });
+}
+
 export function listSupportClusters(brandId: string): SupportClusterView[] {
   return getCustomerOpsSeed(brandId).support.map((item) => {
     const override = getSupportOverride(brandId, item.id);
@@ -372,6 +435,35 @@ export function listSupportClusters(brandId: string): SupportClusterView[] {
     return {
       ...item,
       state: override?.state ?? "open",
+      productHref: buildBrandPath(brandId, `/products/${item.productId}`),
+      linkedDraftId: override?.linkedDraftId,
+      linkedDraftHref: override?.linkedDraftId
+        ? buildBrandPath(brandId, `/content/drafts/${override.linkedDraftId}`)
+        : undefined
+    };
+  });
+}
+
+export async function listSupportClustersAsync(
+  brandId: string
+): Promise<SupportClusterView[]> {
+  const hostedOverrides = shouldEnforceSupabaseHostedAccess()
+    ? await listSupabaseEntityOverrides(brandId, supportOverrideType)
+    : null;
+
+  return getCustomerOpsSeed(brandId).support.map((item) => {
+    const override = shouldEnforceSupabaseHostedAccess()
+      ? hostedOverrides?.[item.id]
+      : getSupportOverride(brandId, item.id);
+
+    return {
+      ...item,
+      state:
+        override?.state === "assigned" ||
+        override?.state === "escalated" ||
+        override?.state === "resolved"
+          ? override.state
+          : "open",
       productHref: buildBrandPath(brandId, `/products/${item.productId}`),
       linkedDraftId: override?.linkedDraftId,
       linkedDraftHref: override?.linkedDraftId
@@ -395,6 +487,36 @@ export function setRetentionState(
   });
 }
 
+export async function setRetentionStateAsync(
+  brandId: string,
+  itemId: string,
+  state: "new" | "flagged" | "planned" | "acted"
+) {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const item = getCustomerOpsSeed(brandId).retention.find((entry) => entry.id === itemId);
+    const current = (await listSupabaseEntityOverrides(brandId, retentionOverrideType))?.[itemId];
+
+    if (!item) {
+      return null;
+    }
+
+    return setSupabaseEntityOverride(brandId, {
+      overrideType: retentionOverrideType,
+      appItemId: itemId,
+      title: item.title,
+      state,
+      linkedDraftId: current?.linkedDraftId,
+      metadata: {
+        productId: item.productId,
+        segment: item.segment
+      }
+    });
+  }
+
+  setRetentionState(brandId, itemId, state);
+  return getRetentionOverride(brandId, itemId);
+}
+
 export function setCxState(
   brandId: string,
   itemId: string,
@@ -409,6 +531,36 @@ export function setCxState(
   });
 }
 
+export async function setCxStateAsync(
+  brandId: string,
+  itemId: string,
+  state: "open" | "assigned" | "resolved"
+) {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const item = getCustomerOpsSeed(brandId).cx.find((entry) => entry.id === itemId);
+    const current = (await listSupabaseEntityOverrides(brandId, cxOverrideType))?.[itemId];
+
+    if (!item) {
+      return null;
+    }
+
+    return setSupabaseEntityOverride(brandId, {
+      overrideType: cxOverrideType,
+      appItemId: itemId,
+      title: item.title,
+      state,
+      linkedDraftId: current?.linkedDraftId,
+      metadata: {
+        productId: item.productId,
+        category: item.category
+      }
+    });
+  }
+
+  setCxState(brandId, itemId, state);
+  return getCxOverride(brandId, itemId);
+}
+
 export function setSupportState(
   brandId: string,
   itemId: string,
@@ -421,6 +573,36 @@ export function setSupportState(
     updatedAt: new Date().toISOString(),
     linkedDraftId: current?.linkedDraftId
   });
+}
+
+export async function setSupportStateAsync(
+  brandId: string,
+  itemId: string,
+  state: "open" | "assigned" | "escalated" | "resolved"
+) {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const item = getCustomerOpsSeed(brandId).support.find((entry) => entry.id === itemId);
+    const current = (await listSupabaseEntityOverrides(brandId, supportOverrideType))?.[itemId];
+
+    if (!item) {
+      return null;
+    }
+
+    return setSupabaseEntityOverride(brandId, {
+      overrideType: supportOverrideType,
+      appItemId: itemId,
+      title: item.title,
+      state,
+      linkedDraftId: current?.linkedDraftId,
+      metadata: {
+        productId: item.productId,
+        category: item.category
+      }
+    });
+  }
+
+  setSupportState(brandId, itemId, state);
+  return getSupportOverride(brandId, itemId);
 }
 
 export function createRetentionDraft(
@@ -463,6 +645,60 @@ export function createRetentionDraft(
   return draft;
 }
 
+export async function createRetentionDraftAsync(
+  brandId: string,
+  itemId: string
+): Promise<WorkflowDraftView | null> {
+  const item = (await listRetentionSignalsAsync(brandId)).find((entry) => entry.id === itemId);
+
+  if (!item) {
+    return null;
+  }
+
+  if (item.linkedDraftId) {
+    const existing = await getBrandDraftAsync(brandId, item.linkedDraftId);
+
+    if (existing) {
+      return existing;
+    }
+  }
+
+  const draft = await createDraftFromProductAsync(brandId, item.productId, {
+    title: `${item.title} lifecycle plan`,
+    channel: "Lifecycle brief",
+    angle: item.recommendation,
+    hook: `Retention depends on making ${item.segment.toLowerCase()} feel the next step is obvious.`,
+    caption: `${item.implication} ${item.recommendation}`,
+    script: `Use the evidence from ${item.segment}, explain why churn risk is ${item.churnRisk}, and map the customer message to a clear lifecycle plan.`
+  });
+
+  if (!draft) {
+    return null;
+  }
+
+  if (shouldEnforceSupabaseHostedAccess()) {
+    await setSupabaseEntityOverride(brandId, {
+      overrideType: retentionOverrideType,
+      appItemId: itemId,
+      title: item.title,
+      state: "acted",
+      linkedDraftId: draft.id,
+      metadata: {
+        productId: item.productId,
+        segment: item.segment
+      }
+    });
+  } else {
+    updateRetentionOverride(brandId, itemId, {
+      state: "acted",
+      updatedAt: new Date().toISOString(),
+      linkedDraftId: draft.id
+    });
+  }
+
+  return await getBrandDraftAsync(brandId, draft.id);
+}
+
 export function createCxDraft(
   brandId: string,
   itemId: string
@@ -503,6 +739,60 @@ export function createCxDraft(
   return draft;
 }
 
+export async function createCxDraftAsync(
+  brandId: string,
+  itemId: string
+): Promise<WorkflowDraftView | null> {
+  const item = (await listCxIssuesAsync(brandId)).find((entry) => entry.id === itemId);
+
+  if (!item) {
+    return null;
+  }
+
+  if (item.linkedDraftId) {
+    const existing = await getBrandDraftAsync(brandId, item.linkedDraftId);
+
+    if (existing) {
+      return existing;
+    }
+  }
+
+  const draft = await createDraftFromProductAsync(brandId, item.productId, {
+    title: `${item.title} CX messaging draft`,
+    channel: "CX message brief",
+    angle: item.recommendation,
+    hook: `Use proactive messaging to close the ${item.category} gap before it becomes a trust problem.`,
+    caption: `${item.implication} ${item.recommendation}`,
+    script: `Open with the recurring customer friction, explain why it matters, and write the proactive message the brand should ship next.`
+  });
+
+  if (!draft) {
+    return null;
+  }
+
+  if (shouldEnforceSupabaseHostedAccess()) {
+    await setSupabaseEntityOverride(brandId, {
+      overrideType: cxOverrideType,
+      appItemId: itemId,
+      title: item.title,
+      state: "assigned",
+      linkedDraftId: draft.id,
+      metadata: {
+        productId: item.productId,
+        category: item.category
+      }
+    });
+  } else {
+    updateCxOverride(brandId, itemId, {
+      state: "assigned",
+      updatedAt: new Date().toISOString(),
+      linkedDraftId: draft.id
+    });
+  }
+
+  return await getBrandDraftAsync(brandId, draft.id);
+}
+
 export function createSupportDraft(
   brandId: string,
   itemId: string
@@ -541,4 +831,58 @@ export function createSupportDraft(
   });
 
   return draft;
+}
+
+export async function createSupportDraftAsync(
+  brandId: string,
+  itemId: string
+): Promise<WorkflowDraftView | null> {
+  const item = (await listSupportClustersAsync(brandId)).find((entry) => entry.id === itemId);
+
+  if (!item) {
+    return null;
+  }
+
+  if (item.linkedDraftId) {
+    const existing = await getBrandDraftAsync(brandId, item.linkedDraftId);
+
+    if (existing) {
+      return existing;
+    }
+  }
+
+  const draft = await createDraftFromProductAsync(brandId, item.productId, {
+    title: `${item.title} response template`,
+    channel: "Support response template",
+    angle: item.responseTemplateAngle,
+    hook: `Turn this repeated support issue into a reusable, trust-preserving response.`,
+    caption: `${item.implication} ${item.responseTemplateAngle}`,
+    script: `Use the ticket pattern, acknowledge the customer's concern, explain the correct expectation, and add the escalation boundary if needed.`
+  });
+
+  if (!draft) {
+    return null;
+  }
+
+  if (shouldEnforceSupabaseHostedAccess()) {
+    await setSupabaseEntityOverride(brandId, {
+      overrideType: supportOverrideType,
+      appItemId: itemId,
+      title: item.title,
+      state: "assigned",
+      linkedDraftId: draft.id,
+      metadata: {
+        productId: item.productId,
+        category: item.category
+      }
+    });
+  } else {
+    updateSupportOverride(brandId, itemId, {
+      state: "assigned",
+      updatedAt: new Date().toISOString(),
+      linkedDraftId: draft.id
+    });
+  }
+
+  return await getBrandDraftAsync(brandId, draft.id);
 }

@@ -4,7 +4,7 @@ import {
 } from "../../../../../lib/api";
 import {
   getMarketNarrative,
-  listCompetitorObservations
+  listCompetitorObservationsAsync
 } from "../../../../../lib/market-intelligence-data";
 import { getAuthorizedBrandState } from "../../../../../lib/session";
 
@@ -25,6 +25,6 @@ export async function GET(_request: Request, { params }: CompetitorsRouteProps) 
   return createApiResponse({
     brandId,
     narrative: getMarketNarrative(brandId),
-    competitors: listCompetitorObservations(brandId)
+    competitors: await listCompetitorObservationsAsync(brandId)
   });
 }

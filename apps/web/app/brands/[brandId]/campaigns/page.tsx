@@ -5,7 +5,7 @@ import {
 import { WorkspacePage } from "../../../../components/workspace-page";
 import {
   getAcquisitionNarrative,
-  listCampaignViews
+  listCampaignViewsAsync
 } from "../../../../lib/acquisition-data";
 
 type CampaignsPageProps = {
@@ -16,7 +16,7 @@ type CampaignsPageProps = {
 
 export default async function CampaignsPage({ params }: CampaignsPageProps) {
   const { brandId } = await params;
-  const campaigns = listCampaignViews(brandId);
+  const campaigns = await listCampaignViewsAsync(brandId);
 
   return (
     <WorkspacePage
