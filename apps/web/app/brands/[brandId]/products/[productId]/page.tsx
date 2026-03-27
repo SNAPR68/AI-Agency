@@ -1,9 +1,4 @@
 import Link from "next/link";
-import {
-  EditorialListPanel,
-  type PresentationTone
-} from "../../../../../components/data-presentation";
-import { WorkspacePage } from "../../../../../components/workspace-page";
 import { getBrandProductDetailAsync } from "../../../../../lib/growth-workflow-data";
 
 type ProductDetailPageProps = {
@@ -13,30 +8,6 @@ type ProductDetailPageProps = {
   }>;
 };
 
-function productTone(status: string): PresentationTone {
-  if (status === "rising") {
-    return "positive";
-  }
-
-  if (status === "watch") {
-    return "warning";
-  }
-
-  return "neutral";
-}
-
-function opportunityTone(status: string): PresentationTone {
-  if (status === "accepted") {
-    return "positive";
-  }
-
-  if (status === "open") {
-    return "warning";
-  }
-
-  return "neutral";
-}
-
 export default async function ProductDetailPage({
   params
 }: ProductDetailPageProps) {
@@ -45,186 +16,182 @@ export default async function ProductDetailPage({
 
   if (!product) {
     return (
-      <WorkspacePage
-        model={{
-          kicker: "Product Detail",
-          title: "Product not found",
-          description:
-            "This product is not available in the current workflow dataset yet.",
-          actions: [
-            {
-              label: "Back to products",
-              href: `/brands/${brandId}/products`
-            }
-          ]
-        }}
-      />
+      <div className="commerce-suite">
+        <header className="command-header">
+          <div className="command-header-copy">
+            <p className="command-kicker">Product Detail</p>
+            <h1 className="command-title">Product not found</h1>
+            <p className="command-description">
+              This product is not available in the current workflow dataset yet.
+            </p>
+          </div>
+          <Link className="command-primary-button" href={`/brands/${brandId}/products`}>
+            Back to Products
+          </Link>
+        </header>
+      </div>
     );
   }
 
   return (
-    <WorkspacePage
-      model={{
-        kicker: "Product Detail",
-        title: product.title,
-        description: product.summary,
-        actions: [
-          {
-            label: "Back to Products",
-            href: `/brands/${brandId}/products`
-          },
-          {
-            label: "Open Content Studio",
-            href: `/brands/${brandId}/content`,
-            tone: "secondary"
-          }
-        ],
-        stats: [
-          {
-            label: "Revenue share",
-            value: product.revenueShare,
-            note: `Movement ${product.revenueDelta}`
-          },
-          {
-            label: "Conversion",
-            value: product.conversionRate,
-            note: `Change ${product.conversionDelta}`
-          },
-          {
-            label: "Workflow load",
-            value: `${product.opportunities.length} opps / ${product.drafts.length} drafts`,
-            note: `${product.marginBand} · ${product.inventoryNote}`
-          }
-        ]
-      }}
-    >
-      <section className="editorial-story-grid">
-        <div className="editorial-main">
-          <section className="editorial-section" data-tone="warm">
-            <p className="editorial-section-label">Strategy</p>
-            <h2 className="editorial-section-title">What the team should reinforce</h2>
-            <p className="editorial-section-description">{product.heroMessage}</p>
-            <p className="editorial-section-description">{product.watchout}</p>
-            <div className="record-actions" style={{ marginTop: "18px" }}>
-              <form
-                action={`/api/brands/${brandId}/products/${product.id}/generate-draft`}
-                className="inline-form"
-                method="post"
-              >
-                <button className="button-link" type="submit">
-                  Generate Draft
-                </button>
-              </form>
-              <Link
-                className="button-link-secondary"
-                href={`/brands/${brandId}/opportunities`}
-              >
-                Open opportunities
-              </Link>
-            </div>
-          </section>
-
-          <section className="editorial-focus-grid">
-            <EditorialListPanel
-              label="Opportunities"
-              title="Linked decisions"
-              description="Open and accepted opportunities tied to this product."
-              items={product.opportunities.map((opportunity) => ({
-                eyebrow: opportunity.type,
-                title: opportunity.title,
-                description: `${opportunity.evidence} ${opportunity.recommendation}`,
-                value: `${opportunity.priorityScore}`,
-                note: "Priority",
-                tags: [
-                  { label: opportunity.status, tone: opportunityTone(opportunity.status) },
-                  { label: `${opportunity.priorityScore} priority`, tone: "info" }
-                ],
-                actions: [
-                  ...(opportunity.linkedDraftHref
-                    ? [
-                        {
-                          label: "Open draft",
-                          href: opportunity.linkedDraftHref,
-                          tone: "primary" as const
-                        }
-                      ]
-                    : [
-                        {
-                          label: "Generate draft",
-                          href: `/api/brands/${brandId}/opportunities/${opportunity.id}/generate-draft`,
-                          method: "post" as const,
-                          tone: "primary" as const
-                        }
-                      ]),
-                  {
-                    label: "Open queue",
-                    href: `/brands/${brandId}/opportunities`,
-                    tone: "secondary"
-                  }
-                ]
-              }))}
-              emptyMessage="No linked opportunities yet."
-            />
-
-            <EditorialListPanel
-              label="Drafts"
-              title="Content already in motion"
-              description="Drafts created from this product or its linked opportunities."
-              items={product.drafts.map((draft) => ({
-                eyebrow: draft.channel,
-                title: draft.title,
-                description: `${draft.hook} Last updated ${draft.updatedAtLabel}.`,
-                value: draft.status.replaceAll("_", " "),
-                note: "Status",
-                tags: [
-                  { label: draft.status.replaceAll("_", " "), tone: "info" },
-                  { label: draft.channel, tone: "neutral" }
-                ],
-                actions: [
-                  {
-                    label: "Open draft",
-                    href: draft.href,
-                    tone: "primary"
-                  }
-                ]
-              }))}
-              emptyMessage="No drafts have been generated from this product yet."
-            />
-          </section>
+    <div className="product-story-page">
+      <header className="product-story-header">
+        <div className="product-story-copy">
+          <div className="product-story-meta">
+            <span className="commerce-tag">{product.status} growth sku</span>
+            <span className="product-story-sync">Last synced moments ago</span>
+          </div>
+          <h1 className="product-story-title">{product.title}</h1>
+          <p className="product-story-description">{product.summary}</p>
         </div>
 
-        <aside className="editorial-rail editorial-summary-stack">
-          <section className="editorial-section" data-tone="ink">
-            <p className="editorial-section-label">Quick Facts</p>
-            <h2 className="editorial-section-title">Product intelligence</h2>
-            <div className="editorial-metric-grid">
-              <article className="editorial-metric-card">
-                <p className="editorial-metric-label">Collection</p>
-                <p className="editorial-metric-value">{product.collection}</p>
-                <p className="editorial-metric-note">{product.status} product</p>
-              </article>
+        <div className="product-story-actions">
+          <form
+            action={`/api/brands/${brandId}/products/${product.id}/generate-draft`}
+            className="inline-form"
+            method="post"
+          >
+            <button className="command-primary-button" type="submit">
+              Generate Hooks
+            </button>
+          </form>
+          <Link className="command-secondary-button" href={`/brands/${brandId}/content`}>
+            Create Brief
+          </Link>
+          <Link
+            className="command-secondary-button"
+            href={`/brands/${brandId}/content/calendar`}
+          >
+            Add to Content Plan
+          </Link>
+          <Link className="command-secondary-button" href={`/brands/${brandId}/opportunities`}>
+            Mark Priority
+          </Link>
+        </div>
+      </header>
 
-              <article className="editorial-metric-card">
-                <p className="editorial-metric-label">Margin</p>
-                <p className="editorial-metric-value">{product.marginBand}</p>
-                <p className="editorial-metric-note">{product.inventoryNote}</p>
-              </article>
-            </div>
-          </section>
+      <section className="product-story-grid">
+        <div className="product-visual-card">
+          <div className="product-visual-badge">SKU {product.id.replace("prod-", "").toUpperCase()}</div>
+          <div className="product-visual-art">{product.title.slice(0, 2).toUpperCase()}</div>
+          <div className="product-visual-footer">
+            <span>{product.collection}</span>
+            <span>{product.status}</span>
+          </div>
+        </div>
 
-          <EditorialListPanel
-            label="Recommended formats"
-            title="Execution formats worth testing"
-            description="These are the formats most likely to support the current product conversation."
-            items={product.recommendedFormats.map((format) => ({
-              eyebrow: product.status,
-              title: format,
-              description: `${product.title} can support this format without drifting away from the current business priority.`,
-              tags: [{ label: product.status, tone: productTone(product.status) }]
-            }))}
-          />
-        </aside>
+        <div className="product-stat-stack">
+          <article className="product-stat-card">
+            <span>Revenue Share</span>
+            <strong>{product.revenueShare}</strong>
+            <p>{product.revenueDelta}</p>
+          </article>
+          <article className="product-stat-card">
+            <span>Conversion</span>
+            <strong>{product.conversionRate}</strong>
+            <p>{product.conversionDelta}</p>
+          </article>
+          <article className="product-stat-card">
+            <span>Margin</span>
+            <strong>{product.marginBand}</strong>
+            <p>{product.inventoryNote}</p>
+          </article>
+        </div>
       </section>
-    </WorkspacePage>
+
+      <section className="product-detail-grid">
+        <article className="product-detail-card product-detail-card-wide">
+          <p className="command-mini-kicker">Strategic Read</p>
+          <h2>{product.heroMessage}</h2>
+          <p>{product.narrative}</p>
+          <div className="product-signal-bars">
+            <div className="product-signal-bar">
+              <span>Revenue Momentum</span>
+              <div>
+                <i style={{ width: `${Math.min(92, Math.max(28, parseInt(product.revenueShare, 10) * 2))}%` }} />
+              </div>
+            </div>
+            <div className="product-signal-bar">
+              <span>Conversion Strength</span>
+              <div>
+                <i style={{ width: `${Math.min(90, Math.max(22, parseInt(product.conversionRate, 10) * 18))}%` }} />
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article className="product-detail-card">
+          <p className="command-mini-kicker">Watchout</p>
+          <h2>Commercial Risk</h2>
+          <p>{product.watchout}</p>
+        </article>
+
+        <article className="product-detail-card product-detail-card-wide">
+          <p className="command-mini-kicker">Linked Opportunities</p>
+          <div className="product-linked-list">
+            {product.opportunities.map((opportunity) => (
+              <div key={opportunity.id} className="product-linked-item">
+                <div>
+                  <h3>{opportunity.title}</h3>
+                  <p>{opportunity.recommendation}</p>
+                </div>
+                <div className="product-linked-actions">
+                  <span className="commerce-tag" data-tone={opportunity.status}>
+                    {opportunity.status}
+                  </span>
+                  {opportunity.linkedDraftHref ? (
+                    <Link className="command-inline-button" href={opportunity.linkedDraftHref}>
+                      Open Draft
+                    </Link>
+                  ) : (
+                    <form
+                      action={`/api/brands/${brandId}/opportunities/${opportunity.id}/generate-draft`}
+                      className="inline-form"
+                      method="post"
+                    >
+                      <button className="command-inline-button" type="submit">
+                        Create Brief
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className="product-detail-card">
+          <p className="command-mini-kicker">Formats</p>
+          <h2>Recommended formats</h2>
+          <div className="product-format-list">
+            {product.recommendedFormats.map((format) => (
+              <span key={format} className="commerce-tag">
+                {format}
+              </span>
+            ))}
+          </div>
+        </article>
+
+        <article className="product-detail-card product-detail-card-wide">
+          <p className="command-mini-kicker">Drafts In Motion</p>
+          <div className="product-linked-list">
+            {product.drafts.map((draft) => (
+              <div key={draft.id} className="product-linked-item">
+                <div>
+                  <h3>{draft.title}</h3>
+                  <p>{draft.hook}</p>
+                </div>
+                <div className="product-linked-actions">
+                  <span className="commerce-tag">{draft.status.replaceAll("_", " ")}</span>
+                  <Link className="command-inline-button" href={draft.href}>
+                    Add to Content Plan
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </article>
+      </section>
+    </div>
   );
 }
