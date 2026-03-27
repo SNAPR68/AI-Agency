@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setCxState } from "../../../../../../../lib/customer-ops-data";
+import { setCxStateAsync } from "../../../../../../../lib/customer-ops-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
@@ -34,7 +34,7 @@ export async function POST(
     );
   }
 
-  setCxState(brandId, itemId, "resolved");
+  await setCxStateAsync(brandId, itemId, "resolved");
 
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath) ? nextPath : `/brands/${brandId}/cx`;
