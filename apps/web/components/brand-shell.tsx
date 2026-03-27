@@ -74,17 +74,19 @@ export function BrandShell({
     brandNavigationSections.find((section) =>
       section.items.some((item) => isActiveNavigationItem(pathname, item, brandId))
     )?.title ?? "Main";
+  const isInboxSection = pathname.includes("/inbox");
+  const isSettingsSection = pathname.includes("/settings");
 
   return (
     <div className="app-shell-root">
       <aside className="app-sidebar">
         <div className="app-sidebar-brand">
           <div className="app-sidebar-logo">
-            <span className="material-symbols-outlined">neurology</span>
+            <span className="material-symbols-outlined">auto_awesome</span>
           </div>
           <div>
             <h1 className="app-sidebar-title">Agency</h1>
-            <p className="app-sidebar-meta">Revenue AI OS</p>
+            <p className="app-sidebar-meta">Shopify Brand OS</p>
           </div>
         </div>
 
@@ -129,9 +131,6 @@ export function BrandShell({
                       </span>
                       <span className="app-sidebar-link-copy">
                         <span className="app-sidebar-link-label">{item.label}</span>
-                        <span className="app-sidebar-link-description">
-                          {item.description}
-                        </span>
                       </span>
                     </Link>
                   );
@@ -167,20 +166,26 @@ export function BrandShell({
             </div>
             <div className="app-topbar-divider" />
             <nav className="app-topbar-nav">
-              <span
+              <Link
                 className="app-topbar-nav-link"
-                data-active={activeSection === "Main" || activeSection === "Commerce"}
+                data-active={!isInboxSection && !isSettingsSection}
+                href={`/brands/${brandId}/overview`}
               >
-                Command
-              </span>
-              <Link className="app-topbar-nav-link" href={`/brands/${brandId}/inbox`}>
+                Analytics
+              </Link>
+              <Link
+                className="app-topbar-nav-link"
+                data-active={isInboxSection}
+                href={`/brands/${brandId}/inbox`}
+              >
                 Inbox
               </Link>
               <Link
                 className="app-topbar-nav-link"
+                data-active={isSettingsSection}
                 href={`/brands/${brandId}/settings/integrations`}
               >
-                System
+                Settings
               </Link>
             </nav>
           </div>
