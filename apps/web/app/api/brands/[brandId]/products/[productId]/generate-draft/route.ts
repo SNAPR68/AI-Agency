@@ -4,8 +4,7 @@ import {
   authHasBrandAccess,
   buildLoginPath,
   getAuthenticatedAppState,
-  isSafeRedirectPath,
-  redirectIfHostedWorkflowMutationUnavailable
+  isSafeRedirectPath
 } from "../../../../../../../lib/session";
 
 type ProductDraftRouteProps = {
@@ -33,16 +32,6 @@ export async function POST(
       new URL(`/brands/${auth.defaultBrandId}/overview`, request.url),
       303
     );
-  }
-
-  const hostedMutationRedirect = redirectIfHostedWorkflowMutationUnavailable(
-    request,
-    nextPath,
-    `/brands/${brandId}/products/${productId}`
-  );
-
-  if (hostedMutationRedirect) {
-    return hostedMutationRedirect;
   }
 
   const draft = await createDraftFromProductAsync(brandId, productId);

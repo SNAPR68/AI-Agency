@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cancelPublishJob } from "../../../../../../../../lib/workflow-execution-data";
+import { cancelPublishJobAsync } from "../../../../../../../../lib/workflow-execution-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
   getAuthenticatedAppState,
-  isSafeRedirectPath,
-  redirectIfHostedWorkflowMutationUnavailable
+  isSafeRedirectPath
 } from "../../../../../../../../lib/session";
 
 type PublishingJobRouteProps = {
@@ -35,17 +34,7 @@ export async function POST(
     );
   }
 
-  const hostedMutationRedirect = redirectIfHostedWorkflowMutationUnavailable(
-    request,
-    nextPath,
-    `/brands/${brandId}/publishing`
-  );
-
-  if (hostedMutationRedirect) {
-    return hostedMutationRedirect;
-  }
-
-  cancelPublishJob(brandId, jobId);
+  await cancelPublishJobAsync(brandId, jobId);
 
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath)

@@ -17,6 +17,14 @@ import {
   listSupabaseDerivedCatalogProducts,
   listSupabaseDerivedStoreMetrics
 } from "./supabase-commerce-read-data";
+import {
+  createSupabaseWorkflowDraft,
+  getSupabaseWorkflowDraft,
+  listSupabaseWorkflowDrafts,
+  markSupabaseDraftReadyForApproval,
+  updateSupabaseWorkflowDraft
+} from "./supabase-workflow-data";
+import { shouldEnforceSupabaseHostedAccess } from "./supabase-env";
 import { getWorkspaceBrand } from "./workspace-data";
 
 type OpportunityType = "product" | "content" | "retention" | "channel";
@@ -983,23 +991,33 @@ export async function listBrandOpportunitiesAsync(
   const productMap = new Map(
     (await getWorkflowProductsAsync(brandId)).map((product) => [product.id, product] as const)
   );
+  const hostedDraftMap = new Map(
+    ((await listSupabaseWorkflowDrafts(brandId)) ?? [])
+      .filter((draft) => draft.sourceOpportunityId)
+      .map((draft) => [draft.sourceOpportunityId as string, draft] as const)
+  );
+  const hostedMode = shouldEnforceSupabaseHostedAccess();
 
   return opportunitySeed
     .map((opportunity) => {
-      const override = getOpportunityOverride(brandId, opportunity.id);
+      const override = hostedMode ? undefined : getOpportunityOverride(brandId, opportunity.id);
+      const hostedDraft = hostedDraftMap.get(opportunity.id);
       const product = opportunity.productId
         ? productMap.get(opportunity.productId)
         : undefined;
 
       return {
         ...opportunity,
-        status: override?.status ?? opportunity.status,
+        status: override?.status ?? (hostedDraft ? "accepted" : opportunity.status),
         href: opportunity.productId
           ? buildBrandPath(brandId, `/products/${opportunity.productId}`)
           : buildBrandPath(brandId, "/content"),
-        linkedDraftId: override?.linkedDraftId,
-        linkedDraftHref: override?.linkedDraftId
-          ? buildBrandPath(brandId, `/content/drafts/${override.linkedDraftId}`)
+        linkedDraftId: override?.linkedDraftId ?? hostedDraft?.id,
+        linkedDraftHref: override?.linkedDraftId || hostedDraft?.id
+          ? buildBrandPath(
+              brandId,
+              `/content/drafts/${override?.linkedDraftId ?? hostedDraft?.id}`
+            )
           : undefined,
         productTitle: product?.title,
         productHref: product
@@ -1029,14 +1047,12 @@ export async function getBrandOpportunityAsync(
   );
 }
 
-export async function listBrandDraftsAsync(brandId: string): Promise<WorkflowDraftView[]> {
-  const opportunityMap = new Map(
-    (await listBrandOpportunitiesAsync(brandId)).map(
-      (opportunity) => [opportunity.id, opportunity] as const
-    )
-  );
-
-  return Array.from(toDraftMap(brandId).values())
+function buildDraftViews(
+  brandId: string,
+  drafts: PersistedDraft[],
+  opportunityMap: Map<string, WorkflowOpportunityView>
+) {
+  return drafts
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
     .map((draft) => ({
       ...draft,
@@ -1049,6 +1065,39 @@ export async function listBrandDraftsAsync(brandId: string): Promise<WorkflowDra
         ? buildBrandPath(brandId, `/products/${draft.productId}`)
         : undefined
     }));
+}
+
+export async function listBrandDraftsAsync(brandId: string): Promise<WorkflowDraftView[]> {
+  const opportunityMap = new Map(
+    (await listBrandOpportunitiesAsync(brandId)).map(
+      (opportunity) => [opportunity.id, opportunity] as const
+    )
+  );
+  const supabaseDrafts = await listSupabaseWorkflowDrafts(brandId);
+  const draftItems =
+    supabaseDrafts ?? (shouldEnforceSupabaseHostedAccess() ? [] : Array.from(toDraftMap(brandId).values()));
+
+  return buildDraftViews(brandId, [...draftItems], opportunityMap);
+}
+
+export async function getBrandDraftAsync(
+  brandId: string,
+  draftId: string
+): Promise<WorkflowDraftView | null> {
+  const opportunityMap = new Map(
+    (await listBrandOpportunitiesAsync(brandId)).map(
+      (opportunity) => [opportunity.id, opportunity] as const
+    )
+  );
+  const draft =
+    (await getSupabaseWorkflowDraft(brandId, draftId)) ??
+    (shouldEnforceSupabaseHostedAccess() ? null : getPersistedDraft(brandId, draftId) ?? toDraftMap(brandId).get(draftId));
+
+  if (!draft) {
+    return null;
+  }
+
+  return buildDraftViews(brandId, [draft], opportunityMap)[0] ?? null;
 }
 
 export async function listBrandProductsAsync(
@@ -1120,6 +1169,25 @@ export async function createDraftFromProductAsync(
   }
 
   const draft = buildDraftFromProduct(product, product.heroMessage, options);
+
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const createdDraft = await createSupabaseWorkflowDraft(brandId, {
+      title: draft.title,
+      channel: draft.channel,
+      angle: draft.angle,
+      status: draft.status,
+      sourceOpportunityId: draft.sourceOpportunityId,
+      sourceProductId: draft.sourceProductId,
+      productId: draft.productId,
+      productTitle: draft.productTitle,
+      hook: draft.hook,
+      caption: draft.caption,
+      script: draft.script
+    });
+
+    return createdDraft ? getBrandDraftAsync(brandId, createdDraft.id) : null;
+  }
+
   upsertPersistedDraft(brandId, draft);
 
   return (
@@ -1173,6 +1241,24 @@ export async function createDraftFromOpportunityAsync(
     productId: product?.id,
     productTitle: product?.title
   } satisfies PersistedDraft;
+
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const createdDraft = await createSupabaseWorkflowDraft(brandId, {
+      title: draft.title,
+      channel: draft.channel,
+      angle: draft.angle,
+      status: draft.status,
+      sourceOpportunityId: draft.sourceOpportunityId,
+      sourceProductId: draft.sourceProductId,
+      productId: draft.productId,
+      productTitle: draft.productTitle,
+      hook: draft.hook,
+      caption: draft.caption,
+      script: draft.script
+    });
+
+    return createdDraft ? getBrandDraftAsync(brandId, createdDraft.id) : null;
+  }
 
   upsertPersistedDraft(brandId, draft);
   updateOpportunityOverride(brandId, opportunityId, {
@@ -1233,4 +1319,33 @@ export function markDraftReadyForApproval(brandId: string, draftId: string) {
   return updateDraftContent(brandId, draftId, {
     status: "ready_for_approval"
   });
+}
+
+export async function updateDraftContentAsync(
+  brandId: string,
+  draftId: string,
+  updates: Partial<
+    Pick<PersistedDraft, "title" | "channel" | "angle" | "hook" | "caption" | "script" | "status">
+  >
+): Promise<WorkflowDraftView | null> {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const updatedDraft = await updateSupabaseWorkflowDraft(brandId, draftId, updates);
+
+    return updatedDraft ? getBrandDraftAsync(brandId, updatedDraft.id) : null;
+  }
+
+  return updateDraftContent(brandId, draftId, updates);
+}
+
+export async function markDraftReadyForApprovalAsync(
+  brandId: string,
+  draftId: string
+): Promise<WorkflowDraftView | null> {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const updatedDraft = await markSupabaseDraftReadyForApproval(brandId, draftId);
+
+    return updatedDraft ? getBrandDraftAsync(brandId, updatedDraft.id) : null;
+  }
+
+  return markDraftReadyForApproval(brandId, draftId);
 }

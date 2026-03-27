@@ -10,10 +10,23 @@ import {
 } from "./local-persistence";
 import {
   getBrandDraft,
+  getBrandDraftAsync,
   listBrandDrafts,
+  listBrandDraftsAsync,
   updateDraftContent,
   type WorkflowDraftView
 } from "./growth-workflow-data";
+import {
+  approveSupabaseDraft,
+  cancelSupabasePublishJob,
+  listSupabaseWorkflowPublishJobs,
+  publishSupabaseDraftNow,
+  requestSupabaseDraftChanges,
+  rejectSupabaseDraft,
+  retrySupabasePublishJob,
+  scheduleSupabaseDraftForPublishing
+} from "./supabase-workflow-data";
+import { shouldEnforceSupabaseHostedAccess } from "./supabase-env";
 
 export type ApprovalItemView = WorkflowDraftView & {
   reviewState: "pending" | "changes_requested" | "approved" | "rejected";
@@ -183,16 +196,46 @@ export function approveDraft(brandId: string, draftId: string) {
   });
 }
 
+export async function approveDraftAsync(brandId: string, draftId: string) {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const draft = await approveSupabaseDraft(brandId, draftId);
+
+    return draft ? getBrandDraftAsync(brandId, draft.id) : null;
+  }
+
+  return approveDraft(brandId, draftId);
+}
+
 export function requestDraftChanges(brandId: string, draftId: string) {
   return updateDraftContent(brandId, draftId, {
     status: "changes_requested"
   });
 }
 
+export async function requestDraftChangesAsync(brandId: string, draftId: string) {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const draft = await requestSupabaseDraftChanges(brandId, draftId);
+
+    return draft ? getBrandDraftAsync(brandId, draft.id) : null;
+  }
+
+  return requestDraftChanges(brandId, draftId);
+}
+
 export function rejectDraft(brandId: string, draftId: string) {
   return updateDraftContent(brandId, draftId, {
     status: "rejected"
   });
+}
+
+export async function rejectDraftAsync(brandId: string, draftId: string) {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const draft = await rejectSupabaseDraft(brandId, draftId);
+
+    return draft ? getBrandDraftAsync(brandId, draft.id) : null;
+  }
+
+  return rejectDraft(brandId, draftId);
 }
 
 export function listReadyToPublishDrafts(brandId: string): WorkflowDraftView[] {
@@ -208,8 +251,66 @@ export function listReadyToPublishDrafts(brandId: string): WorkflowDraftView[] {
   );
 }
 
+export async function listReadyToPublishDraftsAsync(brandId: string): Promise<WorkflowDraftView[]> {
+  const jobs = await listPublishJobsAsync(brandId);
+  const activeDraftIds = new Set(
+    jobs
+      .filter((job) => job.status === "scheduled" || job.status === "published")
+      .map((job) => job.draftId)
+  );
+
+  return (await listBrandDraftsAsync(brandId)).filter(
+    (draft) => draft.status === "approved" && !activeDraftIds.has(draft.id)
+  );
+}
+
 export function listPublishJobs(brandId: string): PublishJobView[] {
   return Array.from(toPublishJobMap(brandId).values())
+    .sort((left, right) => {
+      const rankDelta = publishRank(left.status) - publishRank(right.status);
+
+      if (rankDelta !== 0) {
+        return rankDelta;
+      }
+
+      return right.updatedAt.localeCompare(left.updatedAt);
+    })
+    .map((job) => ({
+      ...job,
+      draftHref: buildBrandPath(brandId, `/content/drafts/${job.draftId}`),
+      updatedAtLabel: formatTimestampLabel(job.updatedAt),
+      scheduledForLabel: formatTimestampLabel(job.scheduledFor),
+      publishedAtLabel: job.publishedAt
+        ? formatTimestampLabel(job.publishedAt)
+        : undefined
+    }));
+}
+
+export async function listApprovalItemsAsync(brandId: string): Promise<ApprovalItemView[]> {
+  return (await listBrandDraftsAsync(brandId))
+    .filter((draft) => isApprovalStatus(draft.status))
+    .sort((left, right) => {
+      const rankDelta = reviewRank(left.status) - reviewRank(right.status);
+
+      if (rankDelta !== 0) {
+        return rankDelta;
+      }
+
+      return right.updatedAt.localeCompare(left.updatedAt);
+    })
+    .map((draft) => ({
+      ...draft,
+      reviewState: mapApprovalState(draft.status)
+    }));
+}
+
+export async function listPublishJobsAsync(brandId: string): Promise<PublishJobView[]> {
+  const supabaseJobs = shouldEnforceSupabaseHostedAccess()
+    ? await listSupabaseWorkflowPublishJobs(brandId)
+    : null;
+  const jobItems = supabaseJobs ?? (shouldEnforceSupabaseHostedAccess() ? [] : Array.from(toPublishJobMap(brandId).values()));
+
+  return jobItems
     .sort((left, right) => {
       const rankDelta = publishRank(left.status) - publishRank(right.status);
 
@@ -271,6 +372,21 @@ export function scheduleDraftForPublishing(
   return listPublishJobs(brandId).find((item) => item.id === job.id) ?? null;
 }
 
+export async function scheduleDraftForPublishingAsync(
+  brandId: string,
+  draftId: string
+): Promise<PublishJobView | null> {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const job = await scheduleSupabaseDraftForPublishing(brandId, draftId);
+
+    return job
+      ? (await listPublishJobsAsync(brandId)).find((item) => item.id === job.id) ?? null
+      : null;
+  }
+
+  return scheduleDraftForPublishing(brandId, draftId);
+}
+
 export function publishDraftNow(
   brandId: string,
   draftId: string
@@ -288,6 +404,21 @@ export function publishDraftNow(
   });
 
   return listPublishJobs(brandId).find((item) => item.id === job.id) ?? null;
+}
+
+export async function publishDraftNowAsync(
+  brandId: string,
+  draftId: string
+): Promise<PublishJobView | null> {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const job = await publishSupabaseDraftNow(brandId, draftId);
+
+    return job
+      ? (await listPublishJobsAsync(brandId)).find((item) => item.id === job.id) ?? null
+      : null;
+  }
+
+  return publishDraftNow(brandId, draftId);
 }
 
 export function retryPublishJob(brandId: string, jobId: string): PublishJobView | null {
@@ -315,6 +446,21 @@ export function retryPublishJob(brandId: string, jobId: string): PublishJobView 
   return listPublishJobs(brandId).find((item) => item.id === jobId) ?? null;
 }
 
+export async function retryPublishJobAsync(
+  brandId: string,
+  jobId: string
+): Promise<PublishJobView | null> {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const job = await retrySupabasePublishJob(brandId, jobId);
+
+    return job
+      ? (await listPublishJobsAsync(brandId)).find((item) => item.id === job.id) ?? null
+      : null;
+  }
+
+  return retryPublishJob(brandId, jobId);
+}
+
 export function cancelPublishJob(brandId: string, jobId: string): PublishJobView | null {
   const existing = getPersistedPublishJob(brandId, jobId) ?? toPublishJobMap(brandId).get(jobId);
 
@@ -334,4 +480,19 @@ export function cancelPublishJob(brandId: string, jobId: string): PublishJobView
   });
 
   return listPublishJobs(brandId).find((item) => item.id === jobId) ?? null;
+}
+
+export async function cancelPublishJobAsync(
+  brandId: string,
+  jobId: string
+): Promise<PublishJobView | null> {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const job = await cancelSupabasePublishJob(brandId, jobId);
+
+    return job
+      ? (await listPublishJobsAsync(brandId)).find((item) => item.id === job.id) ?? null
+      : null;
+  }
+
+  return cancelPublishJob(brandId, jobId);
 }

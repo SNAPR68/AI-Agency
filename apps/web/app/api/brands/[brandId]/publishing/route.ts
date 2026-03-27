@@ -3,8 +3,8 @@ import {
   createApiResponse
 } from "../../../../../lib/api";
 import {
-  listPublishJobs,
-  listReadyToPublishDrafts
+  listPublishJobsAsync,
+  listReadyToPublishDraftsAsync
 } from "../../../../../lib/workflow-execution-data";
 import { getAuthorizedBrandState } from "../../../../../lib/session";
 
@@ -24,7 +24,7 @@ export async function GET(_request: Request, { params }: PublishingRouteProps) {
 
   return createApiResponse({
     brandId,
-    readyDrafts: listReadyToPublishDrafts(brandId),
-    publishJobs: listPublishJobs(brandId)
+    readyDrafts: await listReadyToPublishDraftsAsync(brandId),
+    publishJobs: await listPublishJobsAsync(brandId)
   });
 }

@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { scheduleDraftForPublishing } from "../../../../../../../lib/workflow-execution-data";
+import { scheduleDraftForPublishingAsync } from "../../../../../../../lib/workflow-execution-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
   getAuthenticatedAppState,
-  isSafeRedirectPath,
-  redirectIfHostedWorkflowMutationUnavailable
+  isSafeRedirectPath
 } from "../../../../../../../lib/session";
 
 type PublishingActionRouteProps = {
@@ -35,17 +34,7 @@ export async function POST(
     );
   }
 
-  const hostedMutationRedirect = redirectIfHostedWorkflowMutationUnavailable(
-    request,
-    nextPath,
-    `/brands/${brandId}/publishing`
-  );
-
-  if (hostedMutationRedirect) {
-    return hostedMutationRedirect;
-  }
-
-  scheduleDraftForPublishing(brandId, draftId);
+  await scheduleDraftForPublishingAsync(brandId, draftId);
 
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath)

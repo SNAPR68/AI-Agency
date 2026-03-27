@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { markDraftReadyForApproval, updateDraftContent } from "../../../../../../../../lib/growth-workflow-data";
+import {
+  markDraftReadyForApprovalAsync,
+  updateDraftContentAsync
+} from "../../../../../../../../lib/growth-workflow-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
   getAuthenticatedAppState,
-  isSafeRedirectPath,
-  redirectIfHostedWorkflowMutationUnavailable
+  isSafeRedirectPath
 } from "../../../../../../../../lib/session";
 
 type DraftActionRouteProps = {
@@ -39,17 +41,7 @@ export async function POST(
     );
   }
 
-  const hostedMutationRedirect = redirectIfHostedWorkflowMutationUnavailable(
-    request,
-    nextPath,
-    `/brands/${brandId}/content/drafts/${draftId}`
-  );
-
-  if (hostedMutationRedirect) {
-    return hostedMutationRedirect;
-  }
-
-  updateDraftContent(brandId, draftId, {
+  await updateDraftContentAsync(brandId, draftId, {
     title: readFormValue(formData, "title"),
     channel: readFormValue(formData, "channel"),
     angle: readFormValue(formData, "angle"),
@@ -59,7 +51,7 @@ export async function POST(
     status: "draft"
   });
 
-  const draft = markDraftReadyForApproval(brandId, draftId);
+  const draft = await markDraftReadyForApprovalAsync(brandId, draftId);
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath)
       ? nextPath

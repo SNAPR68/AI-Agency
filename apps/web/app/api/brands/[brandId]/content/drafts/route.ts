@@ -2,7 +2,7 @@ import {
   createApiError,
   createApiResponse
 } from "../../../../../../lib/api";
-import { listBrandDrafts } from "../../../../../../lib/growth-workflow-data";
+import { listBrandDraftsAsync } from "../../../../../../lib/growth-workflow-data";
 import { getAuthorizedBrandState } from "../../../../../../lib/session";
 
 type DraftsRouteProps = {
@@ -21,6 +21,6 @@ export async function GET(_request: Request, { params }: DraftsRouteProps) {
 
   return createApiResponse({
     brandId,
-    drafts: listBrandDrafts(brandId)
+    drafts: await listBrandDraftsAsync(brandId)
   });
 }

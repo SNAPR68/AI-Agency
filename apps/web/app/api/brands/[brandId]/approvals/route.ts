@@ -2,7 +2,7 @@ import {
   createApiError,
   createApiResponse
 } from "../../../../../lib/api";
-import { listApprovalItems } from "../../../../../lib/workflow-execution-data";
+import { listApprovalItemsAsync } from "../../../../../lib/workflow-execution-data";
 import { getAuthorizedBrandState } from "../../../../../lib/session";
 
 type ApprovalsRouteProps = {
@@ -21,6 +21,6 @@ export async function GET(_request: Request, { params }: ApprovalsRouteProps) {
 
   return createApiResponse({
     brandId,
-    approvals: listApprovalItems(brandId)
+    approvals: await listApprovalItemsAsync(brandId)
   });
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { WorkspacePage } from "../../../../../../components/workspace-page";
-import { getBrandDraft } from "../../../../../../lib/growth-workflow-data";
+import { getBrandDraftAsync } from "../../../../../../lib/growth-workflow-data";
 import {
   getHostedWriteDisabledMessage,
   hostedWriteDisabledErrorCode
@@ -23,7 +23,7 @@ export default async function DraftDetailPage({
 }: DraftDetailPageProps) {
   const { brandId, draftId } = await params;
   const { error } = await searchParams;
-  const draft = getBrandDraft(brandId, draftId);
+  const draft = await getBrandDraftAsync(brandId, draftId);
 
   if (!draft) {
     return (

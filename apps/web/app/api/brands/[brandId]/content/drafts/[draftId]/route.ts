@@ -2,7 +2,7 @@ import {
   createApiError,
   createApiResponse
 } from "../../../../../../../lib/api";
-import { getBrandDraft } from "../../../../../../../lib/growth-workflow-data";
+import { getBrandDraftAsync } from "../../../../../../../lib/growth-workflow-data";
 import { getAuthorizedBrandState } from "../../../../../../../lib/session";
 
 type DraftRouteProps = {
@@ -20,7 +20,7 @@ export async function GET(_request: Request, { params }: DraftRouteProps) {
     return createApiError(403, "forbidden", "You do not have access to this brand.");
   }
 
-  const draft = getBrandDraft(brandId, draftId);
+  const draft = await getBrandDraftAsync(brandId, draftId);
 
   if (!draft) {
     return createApiError(404, "not_found", "Draft not found.");

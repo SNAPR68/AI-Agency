@@ -9,7 +9,7 @@ import {
 } from "../../../../lib/session";
 import {
   formatDraftStatusLabel,
-  listApprovalItems
+  listApprovalItemsAsync
 } from "../../../../lib/workflow-execution-data";
 
 type ApprovalsPageProps = {
@@ -43,7 +43,7 @@ export default async function ApprovalsPage({
 }: ApprovalsPageProps) {
   const { brandId } = await params;
   const { error } = await searchParams;
-  const approvals = listApprovalItems(brandId);
+  const approvals = await listApprovalItemsAsync(brandId);
   const pending = approvals.filter((item) => item.status === "ready_for_approval");
   const changesRequested = approvals.filter((item) => item.status === "changes_requested");
   const approved = approvals.filter((item) => item.status === "approved");

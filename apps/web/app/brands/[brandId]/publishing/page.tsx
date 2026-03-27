@@ -9,8 +9,8 @@ import {
 } from "../../../../lib/session";
 import {
   formatDraftStatusLabel,
-  listPublishJobs,
-  listReadyToPublishDrafts
+  listPublishJobsAsync,
+  listReadyToPublishDraftsAsync
 } from "../../../../lib/workflow-execution-data";
 
 type PublishingPageProps = {
@@ -44,8 +44,8 @@ export default async function PublishingPage({
 }: PublishingPageProps) {
   const { brandId } = await params;
   const { error } = await searchParams;
-  const readyDrafts = listReadyToPublishDrafts(brandId);
-  const jobs = listPublishJobs(brandId);
+  const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
+  const jobs = await listPublishJobsAsync(brandId);
   const failureJob = jobs.find((job) => job.status === "failed");
 
   return (

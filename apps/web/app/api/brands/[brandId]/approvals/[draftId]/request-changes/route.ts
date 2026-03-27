@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requestDraftChanges } from "../../../../../../../lib/workflow-execution-data";
+import { requestDraftChangesAsync } from "../../../../../../../lib/workflow-execution-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
   getAuthenticatedAppState,
-  isSafeRedirectPath,
-  redirectIfHostedWorkflowMutationUnavailable
+  isSafeRedirectPath
 } from "../../../../../../../lib/session";
 
 type ApprovalActionRouteProps = {
@@ -35,17 +34,7 @@ export async function POST(
     );
   }
 
-  const hostedMutationRedirect = redirectIfHostedWorkflowMutationUnavailable(
-    request,
-    nextPath,
-    `/brands/${brandId}/approvals`
-  );
-
-  if (hostedMutationRedirect) {
-    return hostedMutationRedirect;
-  }
-
-  requestDraftChanges(brandId, draftId);
+  await requestDraftChangesAsync(brandId, draftId);
 
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath)

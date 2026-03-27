@@ -13,8 +13,11 @@ import {
 import {
   formatDraftStatusLabel,
   listApprovalItems,
+  listApprovalItemsAsync,
   listPublishJobs,
-  listReadyToPublishDrafts
+  listPublishJobsAsync,
+  listReadyToPublishDrafts,
+  listReadyToPublishDraftsAsync
 } from "./workflow-execution-data";
 import { getWorkspaceContext, getWorkspaceContextAsync } from "./workspace-data";
 
@@ -142,9 +145,9 @@ export async function getReportsDashboardDataAsync(
   const workspace = await getWorkspaceContextAsync(brandId);
   const overview = await getWorkspaceOverviewAsync(brandId);
   const latestBrief = await getLatestWorkspaceBriefAsync(brandId);
-  const approvals = listApprovalItems(brandId);
-  const publishJobs = listPublishJobs(brandId);
-  const readyDrafts = listReadyToPublishDrafts(brandId);
+  const approvals = await listApprovalItemsAsync(brandId);
+  const publishJobs = await listPublishJobsAsync(brandId);
+  const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
   const retention = listRetentionSignals(brandId);
   const cxIssues = listCxIssues(brandId);
   const support = listSupportClusters(brandId);
@@ -283,10 +286,10 @@ export async function buildFounderReportMarkdownAsync(brandId: string) {
   const overview = await getWorkspaceOverviewAsync(brandId);
   const latestBrief = await getLatestWorkspaceBriefAsync(brandId);
   const alerts = (await listWorkspaceAlertsAsync(brandId)).slice(0, 3);
-  const approvals = listApprovalItems(brandId).filter(
+  const approvals = (await listApprovalItemsAsync(brandId)).filter(
     (item) => item.status === "ready_for_approval"
   );
-  const publishJobs = listPublishJobs(brandId);
+  const publishJobs = await listPublishJobsAsync(brandId);
   const failedJobs = publishJobs.filter((job) => job.status === "failed");
   const scheduledJobs = publishJobs.filter((job) => job.status === "scheduled");
   const retention = listRetentionSignals(brandId).filter(
@@ -418,9 +421,9 @@ export function buildTeamReportMarkdown(brandId: string) {
 
 export async function buildTeamReportMarkdownAsync(brandId: string) {
   const workspace = await getWorkspaceContextAsync(brandId);
-  const approvals = listApprovalItems(brandId);
-  const readyDrafts = listReadyToPublishDrafts(brandId);
-  const publishJobs = listPublishJobs(brandId);
+  const approvals = await listApprovalItemsAsync(brandId);
+  const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
+  const publishJobs = await listPublishJobsAsync(brandId);
   const trends = listTrendSignals(brandId);
   const competitors = listCompetitorObservations(brandId);
   const retention = listRetentionSignals(brandId);

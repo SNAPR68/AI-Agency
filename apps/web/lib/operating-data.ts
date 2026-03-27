@@ -3,8 +3,11 @@ import "server-only";
 import { getInboxOverride } from "./local-persistence";
 import {
   listApprovalItems,
+  listApprovalItemsAsync,
   listPublishJobs,
-  listReadyToPublishDrafts
+  listPublishJobsAsync,
+  listReadyToPublishDrafts,
+  listReadyToPublishDraftsAsync
 } from "./workflow-execution-data";
 import {
   listDerivedCatalogProducts,
@@ -1182,9 +1185,9 @@ export function listWorkspaceInboxItems(brandId: string): WorkspaceInboxFeedItem
 export async function listWorkspaceInboxItemsAsync(
   brandId: string
 ): Promise<WorkspaceInboxFeedItem[]> {
-  const approvals = listApprovalItems(brandId);
-  const publishJobs = listPublishJobs(brandId);
-  const readyDrafts = listReadyToPublishDrafts(brandId);
+  const approvals = await listApprovalItemsAsync(brandId);
+  const publishJobs = await listPublishJobsAsync(brandId);
+  const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
   const allowSeedFallback = !shouldEnforceSupabaseHostedAccess();
   const seedItems = allowSeedFallback
     ? getBrandSeed(brandId).inbox.filter((item) => {
@@ -1259,6 +1262,174 @@ export async function listWorkspaceInboxItemsAsync(
       receivedAtLabel: formatTimestampLabel(item.receivedAt)
     }))
     .sort((left, right) => right.receivedAt.localeCompare(left.receivedAt));
+}
+
+async function getWorkflowWinsAsync(brandId: string): Promise<WorkspaceInsight[]> {
+  const publishJobs = await listPublishJobsAsync(brandId);
+  const publishedJobs = publishJobs.filter((job) => job.status === "published");
+  const scheduledJobs = publishJobs.filter((job) => job.status === "scheduled");
+  const wins: WorkspaceInsight[] = [];
+
+  if (publishedJobs.length > 0) {
+    wins.push({
+      title: `${publishedJobs.length} ${pluralize(publishedJobs.length, "asset")} already published`,
+      description:
+        "The publishing layer is now shipping approved work instead of keeping execution trapped inside draft review."
+    });
+  }
+
+  if (scheduledJobs.length > 0) {
+    wins.push({
+      title: `${scheduledJobs.length} ${pluralize(scheduledJobs.length, "asset")} scheduled`,
+      description:
+        "Approved drafts are already moving through the publish queue, which keeps the weekly plan operational instead of theoretical."
+    });
+  }
+
+  return wins;
+}
+
+async function getWorkflowRisksAsync(brandId: string): Promise<WorkspaceInsight[]> {
+  const approvals = await listApprovalItemsAsync(brandId);
+  const publishJobs = await listPublishJobsAsync(brandId);
+  const risks: WorkspaceInsight[] = [];
+  const requestedChanges = approvals.filter((draft) => draft.status === "changes_requested");
+  const failedJobs = publishJobs.filter((job) => job.status === "failed");
+
+  if (requestedChanges.length > 0) {
+    risks.push({
+      title: `${requestedChanges.length} ${pluralize(requestedChanges.length, "draft")} sent back for revision`,
+      description:
+        "The review loop is active, but those drafts will block throughput until the team makes another pass."
+    });
+  }
+
+  if (failedJobs.length > 0) {
+    risks.push({
+      title: `${failedJobs.length} ${pluralize(failedJobs.length, "publish job")} failed`,
+      description:
+        "The publishing queue needs intervention before the team can trust delivery timing and completion state."
+    });
+  }
+
+  return risks;
+}
+
+async function getWorkflowNextActionsAsync(
+  brandId: string,
+  owner: string
+): Promise<WorkspaceNextAction[]> {
+  const approvals = await listApprovalItemsAsync(brandId);
+  const publishJobs = await listPublishJobsAsync(brandId);
+  const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
+  const nextActions: WorkspaceNextAction[] = [];
+  const pendingApprovals = approvals.filter((draft) => draft.status === "ready_for_approval");
+  const failedJobs = publishJobs.filter((job) => job.status === "failed");
+
+  if (pendingApprovals.length > 0) {
+    nextActions.push({
+      title: `Review ${pendingApprovals.length} ${pluralize(pendingApprovals.length, "approval item")}`,
+      description:
+        "Clear the approval queue so validated drafts can move into publishing without sitting idle.",
+      owner,
+      dueLabel: "Today",
+      href: buildBrandPath(brandId, "/approvals")
+    });
+  }
+
+  if (failedJobs.length > 0) {
+    nextActions.push({
+      title: `Retry ${failedJobs.length} failed ${pluralize(failedJobs.length, "publish job")}`,
+      description:
+        "Fix failed delivery before the publish queue drifts away from what the team thinks is live.",
+      owner,
+      dueLabel: "Today",
+      href: buildBrandPath(brandId, "/publishing")
+    });
+  }
+
+  if (readyDrafts.length > 0) {
+    nextActions.push({
+      title: `Schedule ${readyDrafts.length} approved ${pluralize(readyDrafts.length, "draft")}`,
+      description:
+        "These drafts are cleared and waiting for a concrete publish decision.",
+      owner,
+      dueLabel: "Today",
+      href: buildBrandPath(brandId, "/publishing")
+    });
+  }
+
+  return nextActions;
+}
+
+async function getWorkflowPulseAsync(
+  brandId: string
+): Promise<WorkspaceWorkflowSignal[]> {
+  const approvals = await listApprovalItemsAsync(brandId);
+  const publishJobs = await listPublishJobsAsync(brandId);
+  const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
+  const pendingApprovals = approvals.filter((draft) => draft.status === "ready_for_approval");
+  const requestedChanges = approvals.filter((draft) => draft.status === "changes_requested");
+  const failedJobs = publishJobs.filter((job) => job.status === "failed");
+  const scheduledJobs = publishJobs.filter((job) => job.status === "scheduled");
+  const signals: WorkspaceWorkflowSignal[] = [];
+
+  if (pendingApprovals.length > 0) {
+    signals.push({
+      title: `${pendingApprovals.length} ${pluralize(pendingApprovals.length, "draft")} awaiting approval`,
+      description:
+        "The team has working content ready for a decision, and clearing this queue will unlock publishing throughput.",
+      tone: "warning",
+      href: buildBrandPath(brandId, "/approvals"),
+      actionLabel: "Review approvals"
+    });
+  }
+
+  if (requestedChanges.length > 0) {
+    signals.push({
+      title: `${requestedChanges.length} ${pluralize(requestedChanges.length, "draft")} needs revision`,
+      description:
+        "Feedback is already in motion, but those drafts need another pass before they can move forward.",
+      tone: "danger",
+      href: buildBrandPath(brandId, "/content"),
+      actionLabel: "Open content studio"
+    });
+  }
+
+  if (readyDrafts.length > 0) {
+    signals.push({
+      title: `${readyDrafts.length} ${pluralize(readyDrafts.length, "approved draft")} ready to schedule`,
+      description:
+        "Publishing can happen immediately without more copy work if the team is comfortable with timing and channel choice.",
+      tone: "info",
+      href: buildBrandPath(brandId, "/publishing"),
+      actionLabel: "Open publishing"
+    });
+  }
+
+  if (scheduledJobs.length > 0) {
+    signals.push({
+      title: `${scheduledJobs.length} ${pluralize(scheduledJobs.length, "job")} already queued`,
+      description:
+        "The publish queue is active and timing-sensitive assets are already staged for delivery.",
+      tone: "positive",
+      href: buildBrandPath(brandId, "/publishing"),
+      actionLabel: "View queue"
+    });
+  }
+
+  if (failedJobs.length > 0) {
+    signals.push({
+      title: `${failedJobs.length} ${pluralize(failedJobs.length, "job")} failed to publish`,
+      description:
+        "A delivery failure is now an operational issue and should be triaged like any other workflow alert.",
+      tone: "danger",
+      href: buildBrandPath(brandId, "/publishing"),
+      actionLabel: "Retry jobs"
+    });
+  }
+
+  return signals;
 }
 
 function getWorkflowWins(brandId: string): WorkspaceInsight[] {
@@ -1779,21 +1950,24 @@ export async function getWorkspaceOverviewAsync(
   const latestMetric = storeMetrics[0];
   const previousMetric = storeMetrics[1];
   const alerts = await listWorkspaceAlertsAsync(brandId);
-  const pendingApprovals = listApprovalItems(brandId).filter(
+  const approvals = await listApprovalItemsAsync(brandId);
+  const publishJobs = await listPublishJobsAsync(brandId);
+  const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
+  const pendingApprovals = approvals.filter(
     (draft) => draft.status === "ready_for_approval"
   ).length;
-  const publishFailures = listPublishJobs(brandId).filter(
+  const publishFailures = publishJobs.filter(
     (job) => job.status === "failed"
   ).length;
-  const approvedToSchedule = listReadyToPublishDrafts(brandId).length;
+  const approvedToSchedule = readyDrafts.length;
   const seededActions = seed.nextActions.map((action, index) => ({
     ...action,
     owner: workspace.users[index % workspace.users.length]?.name ?? workspace.activeUser.name
   }));
-  const workflowActions = getWorkflowNextActions(brandId, workspace.activeUser.name);
-  const workflowWins = getWorkflowWins(brandId);
-  const workflowRisks = getWorkflowRisks(brandId);
-  const workflowPulse = getWorkflowPulse(brandId);
+  const workflowActions = await getWorkflowNextActionsAsync(brandId, workspace.activeUser.name);
+  const workflowWins = await getWorkflowWinsAsync(brandId);
+  const workflowRisks = await getWorkflowRisksAsync(brandId);
+  const workflowPulse = await getWorkflowPulseAsync(brandId);
   const topCommerceProduct = catalogProducts[0];
   const derivedKpis =
     latestMetric && previousMetric
