@@ -9,6 +9,7 @@ import {
   listReadyToPublishDrafts,
   listReadyToPublishDraftsAsync
 } from "./workflow-execution-data";
+import { listSupabaseInboxOverrides } from "./supabase-workflow-data";
 import {
   listDerivedCatalogProducts,
   listDerivedStoreMetrics
@@ -1189,6 +1190,9 @@ export async function listWorkspaceInboxItemsAsync(
   const publishJobs = await listPublishJobsAsync(brandId);
   const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
   const allowSeedFallback = !shouldEnforceSupabaseHostedAccess();
+  const inboxOverrides = shouldEnforceSupabaseHostedAccess()
+    ? (await listSupabaseInboxOverrides(brandId)) ?? {}
+    : null;
   const seedItems = allowSeedFallback
     ? getBrandSeed(brandId).inbox.filter((item) => {
         if (item.kind === "approval" && approvals.length > 0) {
@@ -1258,7 +1262,10 @@ export async function listWorkspaceInboxItemsAsync(
   return [...seedItems, ...workflowItems]
     .map((item) => ({
       ...item,
-      state: getInboxOverride(brandId, item.id)?.state ?? item.state,
+      state:
+        inboxOverrides?.[item.id]?.state ??
+        getInboxOverride(brandId, item.id)?.state ??
+        item.state,
       receivedAtLabel: formatTimestampLabel(item.receivedAt)
     }))
     .sort((left, right) => right.receivedAt.localeCompare(left.receivedAt));

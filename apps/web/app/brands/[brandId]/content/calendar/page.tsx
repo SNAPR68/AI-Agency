@@ -18,8 +18,11 @@ export default async function ContentCalendarPage({
   params
 }: ContentCalendarPageProps) {
   const { brandId } = await params;
-  const days = listCalendarDays(brandId);
-  const backlogGroups = listCalendarBacklogGroups(brandId);
+  const [days, backlogGroups, narrative] = await Promise.all([
+    listCalendarDays(brandId),
+    listCalendarBacklogGroups(brandId),
+    getContentCalendarNarrative(brandId)
+  ]);
   const scheduledCount = days.flatMap((day) => day.items).filter((item) => item.status === "scheduled").length;
   const publishedCount = days.flatMap((day) => day.items).filter((item) => item.status === "published").length;
   const readyCount = backlogGroups.find((group) => group.id === "ready")?.items.length ?? 0;
@@ -29,7 +32,7 @@ export default async function ContentCalendarPage({
       model={{
         kicker: "Content Calendar",
         title: "Weekly schedule and backlog planning",
-        description: getContentCalendarNarrative(brandId),
+        description: narrative,
         actions: [
           {
             label: "Open Content Studio",

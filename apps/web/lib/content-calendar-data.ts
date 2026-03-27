@@ -1,9 +1,12 @@
 import "server-only";
 
-import { listBrandDrafts, type WorkflowDraftView } from "./growth-workflow-data";
 import {
-  listPublishJobs,
-  listReadyToPublishDrafts,
+  listBrandDraftsAsync,
+  type WorkflowDraftView
+} from "./growth-workflow-data";
+import {
+  listPublishJobsAsync,
+  listReadyToPublishDraftsAsync,
   type PublishJobView
 } from "./workflow-execution-data";
 
@@ -103,9 +106,9 @@ function isSameDay(left: Date, right: Date) {
   );
 }
 
-export function getContentCalendarNarrative(brandId: string) {
-  const jobs = listPublishJobs(brandId);
-  const readyDrafts = listReadyToPublishDrafts(brandId);
+export async function getContentCalendarNarrative(brandId: string) {
+  const jobs = await listPublishJobsAsync(brandId);
+  const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
 
   if (jobs.length === 0 && readyDrafts.length === 0) {
     return "The calendar is ready, but there is no scheduled or approval-cleared work yet. Use the content studio to create the next batch of assets.";
@@ -114,8 +117,8 @@ export function getContentCalendarNarrative(brandId: string) {
   return "Use the calendar to see what is already committed to the week, what still needs review, and which approved assets are waiting for a scheduling decision.";
 }
 
-export function listCalendarDays(brandId: string): CalendarDayView[] {
-  const jobs = listPublishJobs(brandId).filter(isCalendarJob);
+export async function listCalendarDays(brandId: string): Promise<CalendarDayView[]> {
+  const jobs = (await listPublishJobsAsync(brandId)).filter(isCalendarJob);
   const days = buildWeekDays(getAnchorDate(jobs));
 
   return days.map((day) => {
@@ -152,8 +155,11 @@ export function listCalendarDays(brandId: string): CalendarDayView[] {
   });
 }
 
-export function listCalendarBacklogGroups(brandId: string): CalendarBacklogGroup[] {
-  const drafts = listBrandDrafts(brandId);
+export async function listCalendarBacklogGroups(
+  brandId: string
+): Promise<CalendarBacklogGroup[]> {
+  const drafts = await listBrandDraftsAsync(brandId);
+  const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
 
   return [
     {
@@ -177,7 +183,7 @@ export function listCalendarBacklogGroups(brandId: string): CalendarBacklogGroup
       id: "ready",
       title: "Ready to schedule",
       description: "Approved work that is not yet committed to the publishing calendar.",
-      items: listReadyToPublishDrafts(brandId)
+      items: readyDrafts
     }
   ];
 }

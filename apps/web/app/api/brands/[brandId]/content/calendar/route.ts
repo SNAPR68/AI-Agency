@@ -24,8 +24,8 @@ export async function GET(
   }
 
   return createApiResponse({
-    narrative: getContentCalendarNarrative(brandId),
-    days: listCalendarDays(brandId),
-    backlog: listCalendarBacklogGroups(brandId)
+    narrative: await getContentCalendarNarrative(brandId),
+    days: await listCalendarDays(brandId),
+    backlog: await listCalendarBacklogGroups(brandId)
   });
 }

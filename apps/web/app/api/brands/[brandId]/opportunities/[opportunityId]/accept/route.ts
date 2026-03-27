@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setOpportunityStatus } from "../../../../../../../lib/growth-workflow-data";
+import { setOpportunityStatusAsync } from "../../../../../../../lib/growth-workflow-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
   getAuthenticatedAppState,
-  isSafeRedirectPath,
-  redirectIfHostedWorkflowMutationUnavailable
+  isSafeRedirectPath
 } from "../../../../../../../lib/session";
 
 type OpportunityActionRouteProps = {
@@ -35,17 +34,7 @@ export async function POST(
     );
   }
 
-  const hostedMutationRedirect = redirectIfHostedWorkflowMutationUnavailable(
-    request,
-    nextPath,
-    `/brands/${brandId}/opportunities`
-  );
-
-  if (hostedMutationRedirect) {
-    return hostedMutationRedirect;
-  }
-
-  setOpportunityStatus(brandId, opportunityId, "accepted");
+  await setOpportunityStatusAsync(brandId, opportunityId, "accepted");
 
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath)

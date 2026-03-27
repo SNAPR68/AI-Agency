@@ -1,6 +1,11 @@
 import "server-only";
 
-import type { PersistedDraft, PersistedPublishJob } from "./local-persistence";
+import type {
+  PersistedDraft,
+  PersistedInboxOverride,
+  PersistedOpportunityOverride,
+  PersistedPublishJob
+} from "./local-persistence";
 import { createSupabaseAdminClient, canUseSupabaseAdmin } from "./supabase-admin";
 import { getSupabaseBrandRecord } from "./supabase-platform-data";
 
@@ -42,9 +47,42 @@ type ApprovalRow = {
   status: string;
 };
 
+type OpportunityRow = {
+  id: string;
+  type: string;
+  title: string;
+  priority_score: number | null;
+  confidence_score: number | null;
+  status: string;
+  evidence_json: Record<string, unknown> | null;
+};
+
+type InboxItemRow = {
+  id: string;
+  item_type: string;
+  title: string;
+  summary: string | null;
+  status: string;
+  payload_json: Record<string, unknown> | null;
+  snoozed_until: string | null;
+  updated_at: string;
+};
+
 type DraftUpdateInput = Partial<
   Pick<PersistedDraft, "title" | "channel" | "angle" | "hook" | "caption" | "script" | "status">
 >;
+
+type HostedOpportunityInput = {
+  appOpportunityId: string;
+  title: string;
+  type: string;
+  priorityScore: number;
+  confidenceScore: number;
+  evidence: string;
+  impact: string;
+  recommendation: string;
+  productId?: string;
+};
 
 const draftStatuses = new Set<PersistedDraft["status"]>([
   "draft",
@@ -293,6 +331,56 @@ async function getPublishJobRow(
     }
 
     return data as PublishJobRow;
+  } catch {
+    return null;
+  }
+}
+
+async function getOpportunityRow(
+  brandUuid: string,
+  appOpportunityId: string
+) {
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from("opportunities")
+      .select("id, type, title, priority_score, confidence_score, status, evidence_json")
+      .eq("brand_id", brandUuid)
+      .contains("evidence_json", { appOpportunityId })
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data as OpportunityRow;
+  } catch {
+    return null;
+  }
+}
+
+async function getInboxItemRow(
+  brandUuid: string,
+  appInboxId: string
+) {
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from("inbox_items")
+      .select("id, item_type, title, summary, status, payload_json, snoozed_until, updated_at")
+      .eq("brand_id", brandUuid)
+      .contains("payload_json", { appInboxId })
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data as InboxItemRow;
   } catch {
     return null;
   }
@@ -860,4 +948,241 @@ export async function cancelSupabasePublishJob(
   } catch {
     return null;
   }
+}
+
+export async function listSupabaseOpportunityOverrides(
+  brandId: string
+): Promise<Record<string, PersistedOpportunityOverride> | null> {
+  const context = await getWorkflowContext(brandId);
+
+  if (!context) {
+    return null;
+  }
+
+  try {
+    const { data, error } = await context.supabase
+      .from("opportunities")
+      .select("id, type, title, priority_score, confidence_score, status, evidence_json")
+      .eq("brand_id", context.brand.id)
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      return null;
+    }
+
+    const items = (data ?? []) as OpportunityRow[];
+    const overrides: Record<string, PersistedOpportunityOverride> = {};
+
+    for (const item of items) {
+      const evidence = item.evidence_json ?? {};
+      const appOpportunityId = typeof evidence.appOpportunityId === "string"
+        ? evidence.appOpportunityId
+        : null;
+
+      if (!appOpportunityId) {
+        continue;
+      }
+
+      overrides[appOpportunityId] = {
+        status:
+          item.status === "accepted" || item.status === "dismissed"
+            ? item.status
+            : "open",
+        updatedAt: new Date().toISOString(),
+        linkedDraftId:
+          typeof evidence.linkedDraftId === "string" ? evidence.linkedDraftId : undefined
+      };
+    }
+
+    return overrides;
+  } catch {
+    return null;
+  }
+}
+
+export async function setSupabaseOpportunityStatus(
+  brandId: string,
+  opportunity: HostedOpportunityInput,
+  status: PersistedOpportunityOverride["status"],
+  linkedDraftId?: string
+): Promise<PersistedOpportunityOverride | null> {
+  const context = await getWorkflowContext(brandId);
+
+  if (!context) {
+    return null;
+  }
+
+  const existing = await getOpportunityRow(context.brand.id, opportunity.appOpportunityId);
+  const evidence = {
+    appOpportunityId: opportunity.appOpportunityId,
+    evidence: opportunity.evidence,
+    impact: opportunity.impact,
+    recommendation: opportunity.recommendation,
+    productId: opportunity.productId ?? null,
+    linkedDraftId: linkedDraftId ?? null
+  };
+
+  try {
+    if (existing) {
+      const { error } = await context.supabase
+        .from("opportunities")
+        .update({
+          type: opportunity.type,
+          title: opportunity.title,
+          priority_score: opportunity.priorityScore,
+          confidence_score: opportunity.confidenceScore,
+          status,
+          evidence_json: evidence,
+          updated_at: new Date().toISOString()
+        })
+        .eq("brand_id", context.brand.id)
+        .eq("id", existing.id);
+
+      if (error) {
+        return null;
+      }
+    } else {
+      const { error } = await context.supabase
+        .from("opportunities")
+        .insert({
+          brand_id: context.brand.id,
+          type: opportunity.type,
+          title: opportunity.title,
+          entity_type: opportunity.productId ? "product" : null,
+          entity_id: null,
+          priority_score: opportunity.priorityScore,
+          confidence_score: opportunity.confidenceScore,
+          status,
+          evidence_json: evidence
+        });
+
+      if (error) {
+        return null;
+      }
+    }
+
+    return {
+      status,
+      updatedAt: new Date().toISOString(),
+      linkedDraftId
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function listSupabaseInboxOverrides(
+  brandId: string
+): Promise<Record<string, PersistedInboxOverride> | null> {
+  const context = await getWorkflowContext(brandId);
+
+  if (!context) {
+    return null;
+  }
+
+  try {
+    const { data, error } = await context.supabase
+      .from("inbox_items")
+      .select("id, item_type, title, summary, status, payload_json, snoozed_until, updated_at")
+      .eq("brand_id", context.brand.id)
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      return null;
+    }
+
+    const overrides: Record<string, PersistedInboxOverride> = {};
+
+    for (const item of (data ?? []) as InboxItemRow[]) {
+      const payload = item.payload_json ?? {};
+      const appInboxId = typeof payload.appInboxId === "string" ? payload.appInboxId : null;
+
+      if (!appInboxId) {
+        continue;
+      }
+
+      overrides[appInboxId] = {
+        state: item.status === "snoozed" ? "scheduled" : item.status === "read" ? "resolved" : "open",
+        updatedAt: item.updated_at
+      };
+    }
+
+    return overrides;
+  } catch {
+    return null;
+  }
+}
+
+async function upsertSupabaseInboxState(
+  brandId: string,
+  itemId: string,
+  status: "read" | "snoozed"
+) {
+  const context = await getWorkflowContext(brandId);
+
+  if (!context) {
+    return null;
+  }
+
+  const existing = await getInboxItemRow(context.brand.id, itemId);
+  const now = new Date();
+  const snoozedUntil =
+    status === "snoozed" ? new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString() : null;
+
+  try {
+    if (existing) {
+      const { error } = await context.supabase
+        .from("inbox_items")
+        .update({
+          status,
+          snoozed_until: snoozedUntil,
+          updated_at: now.toISOString()
+        })
+        .eq("brand_id", context.brand.id)
+        .eq("id", existing.id);
+
+      if (error) {
+        return null;
+      }
+    } else {
+      const { error } = await context.supabase
+        .from("inbox_items")
+        .insert({
+          brand_id: context.brand.id,
+          item_type: "workflow",
+          title: "Workflow inbox item",
+          summary: null,
+          status,
+          payload_json: {
+            appInboxId: itemId
+          },
+          snoozed_until: snoozedUntil
+        });
+
+      if (error) {
+        return null;
+      }
+    }
+
+    return {
+      state: status === "snoozed" ? "scheduled" : "resolved",
+      updatedAt: now.toISOString()
+    } satisfies PersistedInboxOverride;
+  } catch {
+    return null;
+  }
+}
+
+export async function markSupabaseInboxItemRead(
+  brandId: string,
+  itemId: string
+) {
+  return upsertSupabaseInboxState(brandId, itemId, "read");
+}
+
+export async function snoozeSupabaseInboxItem(
+  brandId: string,
+  itemId: string
+) {
+  return upsertSupabaseInboxState(brandId, itemId, "snoozed");
 }

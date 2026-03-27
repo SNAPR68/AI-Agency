@@ -21,7 +21,9 @@ import {
   createSupabaseWorkflowDraft,
   getSupabaseWorkflowDraft,
   listSupabaseWorkflowDrafts,
+  listSupabaseOpportunityOverrides,
   markSupabaseDraftReadyForApproval,
+  setSupabaseOpportunityStatus,
   updateSupabaseWorkflowDraft
 } from "./supabase-workflow-data";
 import { shouldEnforceSupabaseHostedAccess } from "./supabase-env";
@@ -785,6 +787,40 @@ export function setOpportunityStatus(
   });
 }
 
+export async function setOpportunityStatusAsync(
+  brandId: string,
+  opportunityId: string,
+  status: "open" | "accepted" | "dismissed"
+) {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    const opportunity = await getBrandOpportunityAsync(brandId, opportunityId);
+
+    if (!opportunity) {
+      return null;
+    }
+
+    return setSupabaseOpportunityStatus(
+      brandId,
+      {
+        appOpportunityId: opportunity.id,
+        title: opportunity.title,
+        type: opportunity.type,
+        priorityScore: opportunity.priorityScore,
+        confidenceScore: opportunity.confidenceScore,
+        evidence: opportunity.evidence,
+        impact: opportunity.impact,
+        recommendation: opportunity.recommendation,
+        productId: opportunity.productId
+      },
+      status,
+      opportunity.linkedDraftId
+    );
+  }
+
+  setOpportunityStatus(brandId, opportunityId, status);
+  return getOpportunityOverride(brandId, opportunityId);
+}
+
 function buildDraftId() {
   return `draft-${randomUUID().slice(0, 8)}`;
 }
@@ -996,11 +1032,14 @@ export async function listBrandOpportunitiesAsync(
       .filter((draft) => draft.sourceOpportunityId)
       .map((draft) => [draft.sourceOpportunityId as string, draft] as const)
   );
+  const supabaseOverrides = (await listSupabaseOpportunityOverrides(brandId)) ?? {};
   const hostedMode = shouldEnforceSupabaseHostedAccess();
 
   return opportunitySeed
     .map((opportunity) => {
-      const override = hostedMode ? undefined : getOpportunityOverride(brandId, opportunity.id);
+      const override = hostedMode
+        ? supabaseOverrides[opportunity.id]
+        : getOpportunityOverride(brandId, opportunity.id);
       const hostedDraft = hostedDraftMap.get(opportunity.id);
       const product = opportunity.productId
         ? productMap.get(opportunity.productId)
@@ -1256,6 +1295,25 @@ export async function createDraftFromOpportunityAsync(
       caption: draft.caption,
       script: draft.script
     });
+
+    if (createdDraft) {
+      await setSupabaseOpportunityStatus(
+        brandId,
+        {
+          appOpportunityId: opportunity.id,
+          title: opportunity.title,
+          type: opportunity.type,
+          priorityScore: opportunity.priorityScore,
+          confidenceScore: opportunity.confidenceScore,
+          evidence: opportunity.evidence,
+          impact: opportunity.impact,
+          recommendation: opportunity.recommendation,
+          productId: opportunity.productId
+        },
+        "accepted",
+        createdDraft.id
+      );
+    }
 
     return createdDraft ? getBrandDraftAsync(brandId, createdDraft.id) : null;
   }

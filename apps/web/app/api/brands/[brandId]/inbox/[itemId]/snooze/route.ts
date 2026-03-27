@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { snoozeInboxItem } from "../../../../../../../lib/local-persistence";
+import { snoozeSupabaseInboxItem } from "../../../../../../../lib/supabase-workflow-data";
 import {
   authHasBrandAccess,
   buildLoginPath,
   getAuthenticatedAppState,
-  isSafeRedirectPath,
-  redirectIfHostedWorkflowMutationUnavailable
+  isSafeRedirectPath
 } from "../../../../../../../lib/session";
+import { shouldEnforceSupabaseHostedAccess } from "../../../../../../../lib/supabase-env";
 
 type InboxActionRouteProps = {
   params: Promise<{
@@ -32,17 +33,11 @@ export async function POST(request: NextRequest, { params }: InboxActionRoutePro
     );
   }
 
-  const hostedMutationRedirect = redirectIfHostedWorkflowMutationUnavailable(
-    request,
-    nextPath,
-    `/brands/${brandId}/inbox`
-  );
-
-  if (hostedMutationRedirect) {
-    return hostedMutationRedirect;
+  if (shouldEnforceSupabaseHostedAccess()) {
+    await snoozeSupabaseInboxItem(brandId, itemId);
+  } else {
+    snoozeInboxItem(brandId, itemId);
   }
-
-  snoozeInboxItem(brandId, itemId);
 
   const redirectPath =
     nextPath && isSafeRedirectPath(nextPath) ? nextPath : `/brands/${brandId}/inbox`;
