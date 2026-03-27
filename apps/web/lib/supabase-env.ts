@@ -38,6 +38,16 @@ function getSupabaseServiceRoleKey() {
   return readFirstConfiguredEnv(["SUPABASE_SERVICE_ROLE_KEY"]);
 }
 
+function isLegacyLocalAuthFallbackRequested() {
+  const raw = process.env.ALLOW_LEGACY_LOCAL_AUTH_FALLBACK?.trim().toLowerCase();
+
+  if (raw === "false") {
+    return false;
+  }
+
+  return true;
+}
+
 function getProjectMetadata(projectUrl: string) {
   if (!projectUrl) {
     return {
@@ -93,7 +103,8 @@ export function getSupabaseConfigStatus(): SupabaseConfigStatus {
     projectRef,
     projectHost,
     hostedRuntime,
-    hostedSupabaseAccessEnforced: hostedRuntime && clientAuthReady,
+    hostedSupabaseAccessEnforced:
+      hostedRuntime && clientAuthReady && !isLegacyLocalAuthFallbackRequested(),
     urlConfigured: Boolean(projectUrl),
     anonKeyConfigured: Boolean(anonKey),
     serviceRoleConfigured: Boolean(serviceRoleKey),

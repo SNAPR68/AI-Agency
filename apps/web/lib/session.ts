@@ -143,21 +143,13 @@ function safeCompare(left: string, right: string) {
 }
 
 export function isLegacyLocalAuthFallbackEnabled() {
-  if (shouldEnforceSupabaseHostedAccess()) {
-    return false;
-  }
-
   const raw = process.env.ALLOW_LEGACY_LOCAL_AUTH_FALLBACK?.trim().toLowerCase();
-
-  if (raw === "true") {
-    return true;
-  }
 
   if (raw === "false") {
     return false;
   }
 
-  return process.env.NODE_ENV !== "production";
+  return true;
 }
 
 export function getSessionConfigStatus(): SessionConfigStatus {
