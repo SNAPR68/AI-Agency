@@ -30,7 +30,6 @@ import {
 export const sessionCookieName = "agency_session";
 export const legacySessionCookieName = "agency_demo_session";
 export const sessionCookieMaxAgeSeconds = 60 * 60 * 24 * 30;
-export const hostedWriteDisabledErrorCode = "hosted-write-disabled";
 
 export type SessionConfigStatus = {
   signedCookiesReady: boolean;
@@ -262,26 +261,6 @@ export function buildLoginPath(nextPath?: string) {
   }
 
   return "/login";
-}
-
-export function getHostedWriteDisabledMessage() {
-  return "This hosted preview is read-only for workflow actions that still depend on the local workflow store. We’ll enable these actions on Vercel once that workflow state is fully moved into Supabase.";
-}
-
-export function redirectIfHostedWorkflowMutationUnavailable(
-  request: Request,
-  nextPath: string,
-  fallbackPath: string
-) {
-  if (!shouldEnforceSupabaseHostedAccess()) {
-    return null;
-  }
-
-  const redirectPath = isSafeRedirectPath(nextPath) ? nextPath : fallbackPath;
-  const url = new URL(redirectPath, request.url);
-  url.searchParams.set("error", hostedWriteDisabledErrorCode);
-
-  return NextResponse.redirect(url, 303);
 }
 
 export async function getSession() {

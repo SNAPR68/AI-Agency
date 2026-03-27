@@ -1,10 +1,6 @@
 import Link from "next/link";
 import { WorkspacePage } from "../../../../../../components/workspace-page";
 import { getBrandDraftAsync } from "../../../../../../lib/growth-workflow-data";
-import {
-  getHostedWriteDisabledMessage,
-  hostedWriteDisabledErrorCode
-} from "../../../../../../lib/session";
 import { formatDraftStatusLabel } from "../../../../../../lib/workflow-execution-data";
 
 type DraftDetailPageProps = {
@@ -12,17 +8,10 @@ type DraftDetailPageProps = {
     brandId: string;
     draftId: string;
   }>;
-  searchParams: Promise<{
-    error?: string;
-  }>;
 };
 
-export default async function DraftDetailPage({
-  params,
-  searchParams
-}: DraftDetailPageProps) {
+export default async function DraftDetailPage({ params }: DraftDetailPageProps) {
   const { brandId, draftId } = await params;
-  const { error } = await searchParams;
   const draft = await getBrandDraftAsync(brandId, draftId);
 
   if (!draft) {
@@ -72,8 +61,6 @@ export default async function DraftDetailPage({
         title: draft.title,
         description:
           "Edit the working copy, keep the business context intact, and push the draft into approval when it is ready.",
-        notice:
-          error === hostedWriteDisabledErrorCode ? getHostedWriteDisabledMessage() : undefined,
         actions: [
           {
             label: "Back to Content Studio",

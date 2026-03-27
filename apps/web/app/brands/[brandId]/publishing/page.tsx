@@ -4,10 +4,6 @@ import {
 } from "../../../../components/data-presentation";
 import { WorkspacePage } from "../../../../components/workspace-page";
 import {
-  getHostedWriteDisabledMessage,
-  hostedWriteDisabledErrorCode
-} from "../../../../lib/session";
-import {
   formatDraftStatusLabel,
   listPublishJobsAsync,
   listReadyToPublishDraftsAsync
@@ -16,9 +12,6 @@ import {
 type PublishingPageProps = {
   params: Promise<{
     brandId: string;
-  }>;
-  searchParams: Promise<{
-    error?: string;
   }>;
 };
 
@@ -38,12 +31,8 @@ function jobTone(status: string): PresentationTone {
   return "neutral";
 }
 
-export default async function PublishingPage({
-  params,
-  searchParams
-}: PublishingPageProps) {
+export default async function PublishingPage({ params }: PublishingPageProps) {
   const { brandId } = await params;
-  const { error } = await searchParams;
   const readyDrafts = await listReadyToPublishDraftsAsync(brandId);
   const jobs = await listPublishJobsAsync(brandId);
   const failureJob = jobs.find((job) => job.status === "failed");
@@ -55,8 +44,6 @@ export default async function PublishingPage({
         title: "Scheduling, delivery, and retry queue",
         description:
           "This page turns approved work into a real publish plan and keeps failures visible instead of hidden.",
-        notice:
-          error === hostedWriteDisabledErrorCode ? getHostedWriteDisabledMessage() : undefined,
         actions: [
           {
             label: "Open Approvals",

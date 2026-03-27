@@ -4,10 +4,6 @@ import {
 } from "../../../../components/data-presentation";
 import { WorkspacePage } from "../../../../components/workspace-page";
 import {
-  getHostedWriteDisabledMessage,
-  hostedWriteDisabledErrorCode
-} from "../../../../lib/session";
-import {
   formatDraftStatusLabel,
   listApprovalItemsAsync
 } from "../../../../lib/workflow-execution-data";
@@ -15,9 +11,6 @@ import {
 type ApprovalsPageProps = {
   params: Promise<{
     brandId: string;
-  }>;
-  searchParams: Promise<{
-    error?: string;
   }>;
 };
 
@@ -37,12 +30,8 @@ function approvalTone(status: string): PresentationTone {
   return "warning";
 }
 
-export default async function ApprovalsPage({
-  params,
-  searchParams
-}: ApprovalsPageProps) {
+export default async function ApprovalsPage({ params }: ApprovalsPageProps) {
   const { brandId } = await params;
-  const { error } = await searchParams;
   const approvals = await listApprovalItemsAsync(brandId);
   const pending = approvals.filter((item) => item.status === "ready_for_approval");
   const changesRequested = approvals.filter((item) => item.status === "changes_requested");
@@ -56,8 +45,6 @@ export default async function ApprovalsPage({
         title: "Review queue and decision history",
         description:
           "This is where the team turns working drafts into approved assets or routes them back for another pass.",
-        notice:
-          error === hostedWriteDisabledErrorCode ? getHostedWriteDisabledMessage() : undefined,
         actions: [
           {
             label: "Open Content Studio",

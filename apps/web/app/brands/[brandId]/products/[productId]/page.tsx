@@ -4,19 +4,12 @@ import {
   type PresentationTone
 } from "../../../../../components/data-presentation";
 import { WorkspacePage } from "../../../../../components/workspace-page";
-import {
-  getHostedWriteDisabledMessage,
-  hostedWriteDisabledErrorCode
-} from "../../../../../lib/session";
 import { getBrandProductDetailAsync } from "../../../../../lib/growth-workflow-data";
 
 type ProductDetailPageProps = {
   params: Promise<{
     brandId: string;
     productId: string;
-  }>;
-  searchParams: Promise<{
-    error?: string;
   }>;
 };
 
@@ -45,11 +38,9 @@ function opportunityTone(status: string): PresentationTone {
 }
 
 export default async function ProductDetailPage({
-  params,
-  searchParams
+  params
 }: ProductDetailPageProps) {
   const { brandId, productId } = await params;
-  const { error } = await searchParams;
   const product = await getBrandProductDetailAsync(brandId, productId);
 
   if (!product) {
@@ -77,8 +68,6 @@ export default async function ProductDetailPage({
         kicker: "Product Detail",
         title: product.title,
         description: product.summary,
-        notice:
-          error === hostedWriteDisabledErrorCode ? getHostedWriteDisabledMessage() : undefined,
         actions: [
           {
             label: "Back to Products",

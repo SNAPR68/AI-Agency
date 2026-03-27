@@ -2,10 +2,6 @@ import Link from "next/link";
 import { type PresentationTone } from "../../../../components/data-presentation";
 import { WorkspacePage } from "../../../../components/workspace-page";
 import {
-  getHostedWriteDisabledMessage,
-  hostedWriteDisabledErrorCode
-} from "../../../../lib/session";
-import {
   getWorkflowNarrativeAsync,
   listBrandDraftsAsync,
   listBrandOpportunitiesAsync,
@@ -17,9 +13,6 @@ import { formatDraftStatusLabel } from "../../../../lib/workflow-execution-data"
 type ContentPageProps = {
   params: Promise<{
     brandId: string;
-  }>;
-  searchParams: Promise<{
-    error?: string;
   }>;
 };
 
@@ -39,12 +32,8 @@ function toneForDraft(status: string): PresentationTone {
   return "neutral";
 }
 
-export default async function ContentPage({
-  params,
-  searchParams
-}: ContentPageProps) {
+export default async function ContentPage({ params }: ContentPageProps) {
   const { brandId } = await params;
-  const { error } = await searchParams;
   const drafts = await listBrandDraftsAsync(brandId);
   const opportunities = await listBrandOpportunitiesAsync(brandId);
   const products = await listBrandProductsAsync(brandId);
@@ -58,8 +47,6 @@ export default async function ContentPage({
         kicker: "Content Studio",
         title: "Drafts, hooks, and creator-ready execution",
         description: await getWorkflowNarrativeAsync(brandId),
-        notice:
-          error === hostedWriteDisabledErrorCode ? getHostedWriteDisabledMessage() : undefined,
         actions: [
           {
             label: "Generate Hooks",
