@@ -80,11 +80,11 @@ export function BrandShell({
       <aside className="app-sidebar">
         <div className="app-sidebar-brand">
           <div className="app-sidebar-logo">
-            <span className="material-symbols-outlined">auto_awesome</span>
+            <span className="material-symbols-outlined">neurology</span>
           </div>
           <div>
             <h1 className="app-sidebar-title">Agency</h1>
-            <p className="app-sidebar-meta">Shopify Brand OS</p>
+            <p className="app-sidebar-meta">Revenue AI OS</p>
           </div>
         </div>
 
@@ -171,7 +171,7 @@ export function BrandShell({
                 className="app-topbar-nav-link"
                 data-active={activeSection === "Main" || activeSection === "Commerce"}
               >
-                Analytics
+                Command
               </span>
               <Link className="app-topbar-nav-link" href={`/brands/${brandId}/inbox`}>
                 Inbox
@@ -180,7 +180,7 @@ export function BrandShell({
                 className="app-topbar-nav-link"
                 href={`/brands/${brandId}/settings/integrations`}
               >
-                Settings
+                System
               </Link>
             </nav>
           </div>
@@ -200,7 +200,7 @@ export function BrandShell({
               <span className="material-symbols-outlined">settings</span>
             </Link>
             <Link className="app-topbar-export" href={`/brands/${brandId}/reports`}>
-              Export
+              Reports
             </Link>
             <div className="app-topbar-user">
               <div>

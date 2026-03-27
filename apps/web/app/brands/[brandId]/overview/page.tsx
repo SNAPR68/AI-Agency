@@ -61,15 +61,29 @@ export default async function BrandOverviewPage({
     <div className="ledger-page">
       <section className="ledger-header">
         <div className="ledger-header-copy">
-          <p className="ledger-header-kicker">Operational Overview</p>
-          <h1 className="ledger-header-title">Main Ledger</h1>
+          <p className="ledger-header-kicker">Realtime Operating Overview</p>
+          <h1 className="ledger-header-title">Growth Command Center</h1>
           <p className="ledger-header-description">{overview.description}</p>
         </div>
 
         <div className="ledger-header-actions">
+          <div className="ledger-secondary-actions">
+            <Link className="ledger-secondary-action" href={`/brands/${brandId}/settings/integrations`}>
+              <span className="material-symbols-outlined">sync</span>
+              Sync Data
+            </Link>
+            <Link className="ledger-secondary-action" href={`/brands/${brandId}/opportunities`}>
+              <span className="material-symbols-outlined">bolt</span>
+              View Opportunities
+            </Link>
+            <Link className="ledger-secondary-action" href={`/brands/${brandId}/alerts`}>
+              <span className="material-symbols-outlined">notifications</span>
+              Open Alerts
+            </Link>
+          </div>
           <Link className="ledger-primary-action" href={`/brands/${brandId}/briefs/latest`}>
-            Generate Weekly Brief
             <span className="material-symbols-outlined">auto_awesome</span>
+            Generate Weekly Brief
           </Link>
         </div>
       </section>
