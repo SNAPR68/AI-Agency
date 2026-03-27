@@ -1,5 +1,3 @@
-import { type PresentationTone } from "../../../../../components/data-presentation";
-import { WorkspacePage } from "../../../../../components/workspace-page";
 import {
   getPlatformPrimaryShopifyStore,
   listPlatformIntegrationViews,
@@ -20,7 +18,7 @@ type IntegrationsPageProps = {
   }>;
 };
 
-function integrationTone(status: string): PresentationTone {
+function integrationTone(status: string) {
   if (status === "connected") {
     return "positive";
   }
@@ -89,353 +87,248 @@ export default async function IntegrationsPage({
               : null;
 
   return (
-    <WorkspacePage
-      model={{
-        kicker: "Integrations",
-        title: "Integrations and sync health",
-        description:
-          "Manage provider trust, see when the data spine last refreshed, and keep the workspace honest about what is live, degraded, or still staged.",
-        actions: [
-          {
-            label: "Sync Now",
-            href: `/brands/${brandId}/settings/integrations`
-          },
-          {
-            label: "Open Overview",
-            href: `/brands/${brandId}/overview`,
-            tone: "secondary"
-          }
-        ],
-        stats: [
-          {
-            label: "Connected",
-            value: `${connectedCount}`,
-            note: "Providers currently healthy enough to trust in weekly operations."
-          },
-          {
-            label: "Degraded",
-            value: `${degradedCount}`,
-            note: "Connections that need a reconnect or diagnostic pass before they are fully trustworthy."
-          },
-          {
-            label: "Pending",
-            value: `${pendingCount}`,
-            note: "Sources still staged for setup or waiting on the first real sync."
-          }
-        ]
-      }}
-    >
-      {integrationMessage ? <div className="message-banner">{integrationMessage}</div> : null}
-
-      <section className="settings-admin-layout">
-        <div className="settings-admin-main">
-          <article className="settings-card" data-tone="warm">
-            <div className="settings-card-head">
-              <div>
-                <span className="pill">System configuration</span>
-                <h2 className="settings-card-title">Shopify commerce backbone</h2>
-                <p className="settings-card-copy">
-                  This is the first real entry point into the operating system. Once
-                  the store is connected, sync runs can populate products, orders,
-                  customers, and daily metrics into the workspace.
-                </p>
-              </div>
-            </div>
-
-            <div className="settings-mini-metrics">
-              <article className="settings-mini-metric">
-                <p className="settings-mini-label">Trust score</p>
-                <p className="settings-mini-value">{trustScore}</p>
-                <p className="settings-mini-note">Provider health across the workspace.</p>
-              </article>
-              <article className="settings-mini-metric">
-                <p className="settings-mini-label">Sync mode</p>
-                <p className="settings-mini-value">
-                  {shopifySyncStatus.liveSyncReady ? "Live" : "Fallback"}
-                </p>
-                <p className="settings-mini-note">{shopifySyncStatus.modeLabel}</p>
-              </article>
-              <article className="settings-mini-metric">
-                <p className="settings-mini-label">Last ingest</p>
-                <p className="settings-mini-value">
-                  {latestRun?.finishedAtLabel ?? "Awaiting first run"}
-                </p>
-                <p className="settings-mini-note">
-                  {latestRun
-                    ? `${latestRun.recordsProcessed} records processed`
-                    : "No Shopify sync history yet."}
-                </p>
-              </article>
-            </div>
-
-            <form
-              action={`/api/brands/${brandId}/integrations/shopify/connect`}
-              className="editor-form"
-              method="post"
-            >
-              <input
-                name="next"
-                type="hidden"
-                value={`/brands/${brandId}/settings/integrations`}
-              />
-
-              <div className="form-grid">
-                <label className="field-stack">
-                  <span className="field-label">Shop domain</span>
-                  <input
-                    className="text-input"
-                    defaultValue={shopifyStore?.shopDomain ?? ""}
-                    name="shopDomain"
-                    placeholder="brand.myshopify.com"
-                    required
-                    type="text"
-                  />
-                </label>
-
-                <label className="field-stack">
-                  <span className="field-label">Currency</span>
-                  <input
-                    className="text-input"
-                    defaultValue={shopifyStore?.currency ?? "USD"}
-                    maxLength={3}
-                    name="currency"
-                    placeholder="USD"
-                    required
-                    type="text"
-                  />
-                </label>
-              </div>
-
-              <div className="settings-card-actions">
-                <button className="button-link" type="submit">
-                  Connect Shopify
-                </button>
-                <button
-                  className="button-link-secondary"
-                  formAction={`/api/brands/${brandId}/integrations/shopify/sync`}
-                  type="submit"
-                >
-                  Sync Now
-                </button>
-              </div>
-            </form>
-          </article>
-
-          <article className="settings-card">
-            <div className="settings-card-head">
-              <div>
-                <span className="pill">Provider connectivity</span>
-                <h2 className="settings-card-title">Connection health</h2>
-                <p className="settings-card-copy">
-                  Each source should make freshness, coverage, and the next operator
-                  action explicit.
-                </p>
-              </div>
-            </div>
-
-            <div className="settings-provider-list">
-              {integrations.map((integration) => {
-                const primaryAction =
-                  integration.status === "pending"
-                    ? `/api/brands/${brandId}/integrations/${integration.provider}/connect`
-                    : `/api/brands/${brandId}/integrations/${integration.provider}/sync`;
-
-                return (
-                  <article
-                    key={integration.provider}
-                    className="settings-provider-card"
-                  >
-                    <div className="settings-provider-head">
-                      <div>
-                        <p className="settings-item-eyebrow">{integration.provider}</p>
-                        <h3 className="settings-item-title">{integration.label}</h3>
-                        <p className="settings-item-note">{integration.accountLabel}</p>
-                      </div>
-
-                      <div className="record-meta">
-                        <span
-                          className="status-chip"
-                          data-tone={integrationTone(integration.status)}
-                        >
-                          {integration.status}
-                        </span>
-                        <span className="status-chip" data-tone="info">
-                          {integration.lastSyncedLabel}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="settings-item-copy">
-                      {integration.coverage}. {integration.note}
-                    </p>
-
-                    <div className="settings-inline-actions">
-                      <form action={primaryAction} className="inline-form" method="post">
-                        <input
-                          name="next"
-                          type="hidden"
-                          value={`/brands/${brandId}/settings/integrations`}
-                        />
-                        <button className="button-link" type="submit">
-                          {resolveProviderActionLabel(integration.label, integration.status)}
-                        </button>
-                      </form>
-                      <a className="button-link-secondary" href="#sync-history">
-                        View source
-                      </a>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </article>
-
-          <article className="settings-card" id="sync-history">
-            <div className="settings-card-head">
-              <div>
-                <span className="pill">Sync history</span>
-                <h2 className="settings-card-title">Recent Shopify ingest history</h2>
-                <p className="settings-card-copy">
-                  Operators should be able to see when the commerce backbone last ran,
-                  what happened, and how much data moved.
-                </p>
-              </div>
-            </div>
-
-            <div className="settings-log-list">
-              {shopifySyncRuns.length > 0 ? (
-                shopifySyncRuns.map((run) => (
-                  <article
-                    key={`${run.provider}-${run.startedAt ?? run.updatedAt}`}
-                    className="settings-log-item"
-                  >
-                    <div className="settings-log-head">
-                      <div>
-                        <p className="settings-log-label">{run.provider.toUpperCase()}</p>
-                        <h3 className="settings-item-title">{run.triggerLabel}</h3>
-                      </div>
-                      <div className="record-meta">
-                        <span
-                          className="status-chip"
-                          data-tone={
-                            run.status === "success"
-                              ? "positive"
-                              : run.status === "failed"
-                                ? "danger"
-                                : "info"
-                          }
-                        >
-                          {run.status}
-                        </span>
-                        <span className="status-chip" data-tone={run.sourceTone}>
-                          {run.sourceLabel}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="settings-item-copy">
-                      {run.status === "failed"
-                        ? `${run.errorMessage ?? "Sync failed."} ${run.sourceDescription}`
-                        : `${run.recordsProcessed} records processed. ${run.sourceDescription}`}
-                    </p>
-                    <p className="settings-item-note">
-                      Started {run.startedAtLabel ?? "recently"} and finished{" "}
-                      {run.finishedAtLabel ?? "recently"}.
-                    </p>
-                  </article>
-                ))
-              ) : (
-                <p className="empty-note">
-                  No Shopify sync runs yet. Connect the store and run the first ingest.
-                </p>
-              )}
-            </div>
-          </article>
+    <section className="control-suite">
+      <header className="command-header">
+        <div className="command-header-copy">
+          <p className="command-kicker">Settings / Integrations</p>
+          <h1 className="command-title">Integrations &amp; Sync Health</h1>
+          <p className="command-description">
+            Manage external data connections, sync confidence, and provider health. High-fidelity refreshes keep the
+            operating system honest about what is live, degraded, or still staged.
+          </p>
         </div>
 
-        <aside className="settings-admin-rail">
-          <article className="settings-score-card">
-            <p className="settings-mini-label">Connection score</p>
-            <p className="settings-score-value">{trustScore}</p>
-            <p className="settings-score-note">
-              The current workspace can trust {connectedCount} of {integrations.length} live
-              sources without qualification.
+        <div className="command-actions">
+          <a className="command-secondary-button" href="#shopify-store">
+            Connect Shopify
+          </a>
+          <form
+            action={`/api/brands/${brandId}/integrations/shopify/sync`}
+            className="inline-form"
+            method="post"
+          >
+            <input name="next" type="hidden" value={`/brands/${brandId}/settings/integrations`} />
+            <button className="command-primary-button" type="submit">
+              Sync Now
+            </button>
+          </form>
+        </div>
+      </header>
+
+      {integrationMessage ? <div className="message-banner">{integrationMessage}</div> : null}
+
+      <div className="control-hero-grid">
+        <article className="control-hero-card" id="shopify-store">
+          <div className="control-hero-top">
+            <div>
+              <p className="command-mini-kicker">Commerce backbone</p>
+              <h2>Shopify Main Store</h2>
+              <p>{shopifyStore?.shopDomain ?? "Add the primary Shopify store domain to begin live commerce syncs."}</p>
+            </div>
+            <div className="record-meta">
+              <span className="status-chip" data-tone={shopifySyncStatus.liveSyncReady ? "positive" : "warning"}>
+                {shopifySyncStatus.liveSyncReady ? "live mode" : "fallback mode"}
+              </span>
+              <span className="status-chip" data-tone="info">
+                {latestRun?.finishedAtLabel ?? "awaiting first run"}
+              </span>
+            </div>
+          </div>
+
+          <div className="control-stat-grid">
+            <article className="control-stat-card">
+              <span>Trust score</span>
+              <strong>{trustScore}</strong>
+              <p>Confidence across all connected providers.</p>
+            </article>
+            <article className="control-stat-card">
+              <span>Freshness</span>
+              <strong>{latestRun?.recordsProcessed ?? 0}</strong>
+              <p>Records moved on the latest Shopify ingest.</p>
+            </article>
+            <article className="control-stat-card">
+              <span>Status mix</span>
+              <strong>
+                {connectedCount}/{integrations.length}
+              </strong>
+              <p>
+                {degradedCount} degraded · {pendingCount} pending
+              </p>
+            </article>
+          </div>
+
+          <form
+            action={`/api/brands/${brandId}/integrations/shopify/connect`}
+            className="control-form-grid"
+            method="post"
+          >
+            <input name="next" type="hidden" value={`/brands/${brandId}/settings/integrations`} />
+            <label className="field-stack">
+              <span className="field-label">Shop domain</span>
+              <input
+                className="text-input"
+                defaultValue={shopifyStore?.shopDomain ?? ""}
+                name="shopDomain"
+                placeholder="brand.myshopify.com"
+                required
+                type="text"
+              />
+            </label>
+            <label className="field-stack">
+              <span className="field-label">Currency</span>
+              <input
+                className="text-input"
+                defaultValue={shopifyStore?.currency ?? "USD"}
+                maxLength={3}
+                name="currency"
+                placeholder="USD"
+                required
+                type="text"
+              />
+            </label>
+            <div className="control-form-actions">
+              <button className="button-link" type="submit">
+                Connect Shopify
+              </button>
+              <button
+                className="button-link-secondary"
+                formAction={`/api/brands/${brandId}/integrations/shopify/sync`}
+                type="submit"
+              >
+                Sync Now
+              </button>
+            </div>
+          </form>
+        </article>
+
+        <article className="control-side-card">
+          <p className="command-mini-kicker">Sync performance</p>
+          <h2>Live mode diagnostics</h2>
+          <p>{shopifySyncStatus.detail}</p>
+          <div className="control-metric-list">
+            <article>
+              <span>Provider uptime</span>
+              <strong>{connectedCount === integrations.length ? "100.0%" : "92.4%"}</strong>
+            </article>
+            <article>
+              <span>Payload confidence</span>
+              <strong>{shopifySyncStatus.liveSyncReady ? "High" : "Fallback"}</strong>
+            </article>
+            <article>
+              <span>Last mode</span>
+              <strong>{latestRun?.sourceLabel ?? shopifySyncStatus.modeLabel}</strong>
+            </article>
+          </div>
+          <div className="control-note-card">
+            <strong>Growth integrity check</strong>
+            <p>
+              {latestRun?.fallbackReason
+                ? `Latest fallback reason: ${latestRun.fallbackReason.replaceAll("_", " ")}.`
+                : "No data drift is currently being reported across the connected commerce layer."}
             </p>
-          </article>
+          </div>
+        </article>
+      </div>
 
-          <article className="settings-card">
-            <div className="settings-card-head">
-              <div>
-                <span className="pill">Sync confidence</span>
-                <h2 className="settings-card-title">Live mode diagnostics</h2>
-                <p className="settings-card-copy">{shopifySyncStatus.detail}</p>
+      <section className="control-provider-grid">
+        {integrations.map((integration) => {
+          const primaryAction =
+            integration.status === "pending"
+              ? `/api/brands/${brandId}/integrations/${integration.provider}/connect`
+              : `/api/brands/${brandId}/integrations/${integration.provider}/sync`;
+
+          return (
+            <article key={integration.provider} className="control-provider-card">
+              <div className="control-provider-head">
+                <div>
+                  <p className="command-mini-kicker">{integration.provider}</p>
+                  <h2>{integration.label}</h2>
+                  <p>{integration.accountLabel}</p>
+                </div>
+                <div className="record-meta">
+                  <span className="status-chip" data-tone={integrationTone(integration.status)}>
+                    {integration.status}
+                  </span>
+                  <span className="status-chip" data-tone="info">
+                    {integration.lastSyncedLabel}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <div className="settings-guidance-list">
-              <article className="settings-guidance-item">
-                <p className="settings-item-eyebrow">Store record</p>
-                <h3 className="settings-item-title">
-                  {shopifyStore ? shopifyStore.shopDomain : "No Shopify store saved yet"}
-                </h3>
-                <p className="settings-item-copy">
-                  {shopifyStore
-                    ? `Currency ${shopifyStore.currency}. Connected ${shopifyStore.connectedAtLabel ?? "recently"} and updated ${shopifyStore.updatedAtLabel}.`
-                    : "Add a store domain before triggering live commerce syncs."}
-                </p>
-              </article>
+              <p className="control-provider-copy">
+                {integration.coverage}. {integration.note}
+              </p>
 
-              <article className="settings-guidance-item">
-                <p className="settings-item-eyebrow">Fallback behavior</p>
-                <h3 className="settings-item-title">
-                  {shopifySyncStatus.liveSyncReady ? "Live Admin API mode" : "Seeded fallback mode"}
-                </h3>
-                <p className="settings-item-copy">
-                  {latestRun?.fallbackReason
-                    ? `Latest fallback reason: ${latestRun.fallbackReason.replaceAll("_", " ")}.`
-                    : "When live credentials are unavailable or a request fails, the workspace can still refresh from the seeded snapshot."}
-                </p>
-              </article>
-            </div>
-          </article>
-
-          <article className="settings-card">
-            <div className="settings-card-head">
-              <div>
-                <span className="pill">Operating notes</span>
-                <h2 className="settings-card-title">What good looks like</h2>
-                <p className="settings-card-copy">
-                  The control layer should keep confidence and next actions visible,
-                  not hide uncertainty behind a generic “connected” state.
-                </p>
+              <div className="control-provider-actions">
+                <form action={primaryAction} className="inline-form" method="post">
+                  <input name="next" type="hidden" value={`/brands/${brandId}/settings/integrations`} />
+                  <button className="button-link" type="submit">
+                    {resolveProviderActionLabel(integration.label, integration.status)}
+                  </button>
+                </form>
+                <a className="button-link-secondary" href="#sync-history">
+                  View Source
+                </a>
               </div>
-            </div>
-
-            <div className="settings-guidance-list">
-              <article className="settings-guidance-item">
-                <h3 className="settings-item-title">Make freshness visible</h3>
-                <p className="settings-item-copy">
-                  If a source is stale, the workspace should show it directly instead
-                  of quietly lowering trust behind the scenes.
-                </p>
-              </article>
-              <article className="settings-guidance-item">
-                <h3 className="settings-item-title">Start with the commerce backbone</h3>
-                <p className="settings-item-copy">
-                  Shopify is the base layer. Meta and GA4 add performance context, and
-                  Klaviyo extends retention visibility.
-                </p>
-              </article>
-              <article className="settings-guidance-item">
-                <h3 className="settings-item-title">Tie state to action</h3>
-                <p className="settings-item-copy">
-                  Every degraded or pending integration should carry an obvious reconnect
-                  or sync action so operators are never guessing.
-                </p>
-              </article>
-            </div>
-          </article>
-        </aside>
+            </article>
+          );
+        })}
       </section>
-    </WorkspacePage>
+
+      <section className="control-card" id="sync-history">
+        <div className="control-card-head">
+          <div>
+            <p className="command-mini-kicker">Sync history</p>
+            <h2>Recent Shopify ingest history</h2>
+            <p>Operators should be able to see when the commerce backbone last ran and what happened during the refresh.</p>
+          </div>
+        </div>
+
+        <div className="control-sync-list">
+          {shopifySyncRuns.length > 0 ? (
+            shopifySyncRuns.map((run) => (
+              <article
+                key={`${run.provider}-${run.startedAt ?? run.updatedAt}`}
+                className="control-sync-item"
+              >
+                <div className="control-sync-head">
+                  <div>
+                    <p className="command-mini-kicker">{run.provider.toUpperCase()}</p>
+                    <h3>{run.triggerLabel}</h3>
+                  </div>
+                  <div className="record-meta">
+                    <span
+                      className="status-chip"
+                      data-tone={
+                        run.status === "success"
+                          ? "positive"
+                          : run.status === "failed"
+                            ? "danger"
+                            : "info"
+                      }
+                    >
+                      {run.status}
+                    </span>
+                    <span className="status-chip" data-tone={run.sourceTone}>
+                      {run.sourceLabel}
+                    </span>
+                  </div>
+                </div>
+                <p>
+                  {run.status === "failed"
+                    ? `${run.errorMessage ?? "Sync failed."} ${run.sourceDescription}`
+                    : `${run.recordsProcessed} records processed. ${run.sourceDescription}`}
+                </p>
+                <span>
+                  Started {run.startedAtLabel ?? "recently"} and finished {run.finishedAtLabel ?? "recently"}.
+                </span>
+              </article>
+            ))
+          ) : (
+            <p className="empty-note">No Shopify sync runs yet. Connect the store and run the first ingest.</p>
+          )}
+        </div>
+      </section>
+    </section>
   );
 }

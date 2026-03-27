@@ -1,4 +1,3 @@
-import { WorkspacePage } from "../../../../../components/workspace-page";
 import { getPlatformBrandMemoryProfile } from "../../../../../lib/supabase-platform-data";
 
 type BrandMemoryPageProps = {
@@ -47,299 +46,184 @@ export default async function BrandMemoryPage({ params }: BrandMemoryPageProps) 
   const profile = await getPlatformBrandMemoryProfile(brandId);
   const completenessScore = buildCompletenessScore(profile);
   const messagingRows = buildMessagingRows(profile);
+  const toneTags = profile.tone
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
 
   return (
-    <WorkspacePage
-      model={{
-        kicker: "Brand Memory",
-        title: "Brand and memory context",
-        description:
-          "Define the brand, tone, customer, and message boundaries that keep content, briefs, and recommendations specific instead of generic.",
-        actions: [
-          {
-            label: "Open Content Studio",
-            href: `/brands/${brandId}/content`
-          },
-          {
-            label: "Open Users",
-            href: `/brands/${brandId}/settings/users`,
-            tone: "secondary"
-          }
-        ],
-        stats: [
-          {
-            label: "Hero products",
-            value: `${profile.heroProducts.length}`,
-            note: "Priority products the system should keep in view during recommendations."
-          },
-          {
-            label: "Voice rules",
-            value: `${profile.doSay.length + profile.dontSay.length}`,
-            note: "Explicit phrases and boundaries already captured in memory."
-          },
-          {
-            label: "Last updated",
-            value: profile.updatedAtLabel,
-            note: "Most recent brand-memory save."
-          }
-        ]
-      }}
+    <form
+      action={`/api/brands/${brandId}/settings/brand-memory/save`}
+      className="control-suite"
+      method="post"
     >
-      <form
-        action={`/api/brands/${brandId}/settings/brand-memory/save`}
-        className="settings-admin-layout"
-        method="post"
-      >
-        <input
-          name="next"
-          type="hidden"
-          value={`/brands/${brandId}/settings/brand-memory`}
-        />
+      <input name="next" type="hidden" value={`/brands/${brandId}/settings/brand-memory`} />
 
-        <div className="settings-admin-main">
-          <article className="settings-card" data-tone="warm">
-            <div className="settings-card-head">
+      <header className="command-header">
+        <div className="command-header-copy">
+          <p className="command-kicker">Settings / Brand Memory</p>
+          <h1 className="command-title">Brand Memory</h1>
+          <p className="command-description">
+            Define the soul of the brand. This ledger stores the narrative archetypes, tone constraints, and hero
+            products that steer every recommendation, draft, and approval.
+          </p>
+        </div>
+
+        <div className="command-actions">
+          <button className="command-primary-button" type="submit">
+            Save Brand Voice
+          </button>
+          <a className="command-secondary-button" href="#messaging-rules">
+            Add Messaging Rule
+          </a>
+          <a className="command-secondary-button" href="#hero-products">
+            Add Hero Product
+          </a>
+          <a className="command-secondary-button" href="#personas">
+            Update Persona
+          </a>
+        </div>
+      </header>
+
+      <div className="control-memory-grid">
+        <div className="control-memory-main">
+          <section className="control-card">
+            <div className="control-card-head">
               <div>
-                <span className="pill">Brand</span>
-                <h2 className="settings-card-title">Define the memory layer</h2>
-                <p className="settings-card-copy">
-                  This layer becomes the narrative and messaging guardrail for every
-                  brief, draft, and recommendation the workspace generates.
-                </p>
-              </div>
-
-              <div className="settings-card-actions">
-                <button className="button-link" type="submit">
-                  Save Brand Voice
-                </button>
-                <a className="button-link-secondary" href="#messaging-rules">
-                  Add Messaging Rule
-                </a>
-                <a className="button-link-secondary" href="#hero-products">
-                  Add Hero Product
-                </a>
-                <a className="button-link-secondary" href="#personas">
-                  Update Persona
-                </a>
+                <p className="command-mini-kicker">Brand profile</p>
+                <h2>Mission statement and core narrative</h2>
+                <p>Keep the memory concise and sharp enough that operators can use it as a creative decision filter.</p>
               </div>
             </div>
-
-            <div className="settings-split-grid">
-              <article className="settings-field-panel">
-                <p className="settings-mini-label">Mission statement</p>
-                <label className="field-stack">
-                  <span className="field-label">Positioning</span>
-                  <textarea
-                    className="text-area text-area-compact"
-                    defaultValue={profile.positioning}
-                    name="positioning"
-                  />
-                </label>
-              </article>
-
-              <article className="settings-field-panel">
-                <p className="settings-mini-label">Core narrative</p>
-                <label className="field-stack">
-                  <span className="field-label">Target customer</span>
-                  <textarea
-                    className="text-area text-area-compact"
-                    defaultValue={profile.targetCustomer}
-                    name="targetCustomer"
-                  />
-                </label>
-              </article>
+            <div className="control-form-grid control-form-grid-double">
+              <label className="field-stack">
+                <span className="field-label">Positioning</span>
+                <textarea className="text-area text-area-compact" defaultValue={profile.positioning} name="positioning" />
+              </label>
+              <label className="field-stack">
+                <span className="field-label">Target customer</span>
+                <textarea
+                  className="text-area text-area-compact"
+                  defaultValue={profile.targetCustomer}
+                  name="targetCustomer"
+                />
+              </label>
             </div>
-          </article>
+          </section>
 
-          <article className="settings-card">
-            <div className="settings-card-head">
+          <section className="control-card">
+            <div className="control-card-head">
               <div>
-                <span className="pill">Tone &amp; voice</span>
-                <h2 className="settings-card-title">Alignment and phrasing</h2>
-                <p className="settings-card-copy">
-                  Set the emotional tone, the phrases the brand should repeat, and the
-                  shortcuts the system should avoid.
-                </p>
+                <p className="command-mini-kicker">Tone &amp; voice</p>
+                <h2>Alignment and phrasing</h2>
+                <p>These attributes define how the system should sound before it writes a single line of content.</p>
               </div>
             </div>
 
-            <div className="settings-split-grid">
-              <article className="settings-field-panel">
-                <label className="field-stack">
-                  <span className="field-label">Tone</span>
-                  <input className="text-input" defaultValue={profile.tone} name="tone" />
-                </label>
-
-                <div className="settings-mini-metrics">
-                  <article className="settings-mini-metric">
-                    <p className="settings-mini-label">Current tone</p>
-                    <p className="settings-mini-value">{profile.tone.split(",")[0]}</p>
-                    <p className="settings-mini-note">
-                      Keep the tone short enough that operators can use it as a
-                      decision filter.
-                    </p>
-                  </article>
+            <div className="control-voice-grid">
+              <label className="field-stack">
+                <span className="field-label">Tone</span>
+                <input className="text-input" defaultValue={profile.tone} name="tone" />
+              </label>
+              <article className="control-tone-card">
+                <span>Current voice posture</span>
+                <div className="control-tone-tags">
+                  {toneTags.map((tag) => (
+                    <strong key={tag}>{tag}</strong>
+                  ))}
                 </div>
-              </article>
-
-              <article className="settings-field-panel" data-tone="warm">
-                <p className="settings-mini-label">Personal alignment</p>
-                <p className="settings-card-copy">
-                  Current voice rules give the model a clear baseline for what should
-                  sound like {profile.brandName}.
-                </p>
-
-                <div className="settings-score-grid">
-                  <article className="settings-mini-metric">
-                    <p className="settings-mini-label">Use</p>
-                    <p className="settings-mini-value">{profile.doSay.length}</p>
-                    <p className="settings-mini-note">Priority phrases in memory.</p>
-                  </article>
-                  <article className="settings-mini-metric">
-                    <p className="settings-mini-label">Avoid</p>
-                    <p className="settings-mini-value">{profile.dontSay.length}</p>
-                    <p className="settings-mini-note">Phrases blocked from output.</p>
-                  </article>
-                </div>
+                <p>Current settings give the workspace a concrete baseline for what should sound like {profile.brandName}.</p>
               </article>
             </div>
 
-            <div className="settings-split-grid">
-              <article className="settings-field-panel">
-                <label className="field-stack">
-                  <span className="field-label">Say this</span>
-                  <textarea
-                    className="text-area text-area-compact"
-                    defaultValue={profile.doSay.join(", ")}
-                    name="doSay"
-                  />
-                </label>
-              </article>
-
-              <article className="settings-field-panel">
-                <label className="field-stack">
-                  <span className="field-label">Do not say this</span>
-                  <textarea
-                    className="text-area text-area-compact"
-                    defaultValue={profile.dontSay.join(", ")}
-                    name="dontSay"
-                  />
-                </label>
-              </article>
+            <div className="control-form-grid control-form-grid-double">
+              <label className="field-stack">
+                <span className="field-label">Do say</span>
+                <textarea className="text-area text-area-compact" defaultValue={profile.doSay.join(", ")} name="doSay" />
+              </label>
+              <label className="field-stack">
+                <span className="field-label">Don&apos;t say</span>
+                <textarea
+                  className="text-area text-area-compact"
+                  defaultValue={profile.dontSay.join(", ")}
+                  name="dontSay"
+                />
+              </label>
             </div>
-          </article>
+          </section>
 
-          <article className="settings-card" id="messaging-rules">
-            <div className="settings-card-head">
+          <section className="control-card" id="messaging-rules">
+            <div className="control-card-head">
               <div>
-                <span className="pill">Messaging rules</span>
-                <h2 className="settings-card-title">What should be repeated, avoided, or reframed</h2>
-                <p className="settings-card-copy">
-                  Treat this as the editorial decision table the rest of the product
-                  must obey.
-                </p>
+                <p className="command-mini-kicker">Messaging rules</p>
+                <h2>Rule table</h2>
+                <p>Treat this as the editorial decision table the rest of the product must obey.</p>
               </div>
             </div>
 
-            <div className="settings-table-header">
-              <p className="settings-table-head">Rule context</p>
-              <p className="settings-table-head">Do say</p>
-              <p className="settings-table-head">Don&apos;t say</p>
-              <p className="settings-table-head">Action</p>
-            </div>
-
-            <div className="settings-messaging-table">
+            <div className="control-rule-grid">
               {messagingRows.map((row) => (
-                <article key={row.context} className="settings-table-row">
-                  <div className="settings-table-cell">
-                    <p className="settings-table-title">{row.context}</p>
-                    <p className="settings-table-subcopy">
-                      Use the positive phrasing and actively remove the negative
-                      substitute when drafting.
-                    </p>
+                <article key={row.context} className="control-rule-row">
+                  <div>
+                    <strong>{row.context}</strong>
+                    <p>Use the positive phrasing and actively remove the negative substitute when drafting.</p>
                   </div>
-                  <div className="settings-table-cell">
-                    <span className="status-chip" data-tone="positive">
-                      {row.doSay}
-                    </span>
-                  </div>
-                  <div className="settings-table-cell">
-                    <span className="status-chip" data-tone="danger">
-                      {row.dontSay}
-                    </span>
-                  </div>
-                  <div className="settings-table-cell">
-                    <a className="button-link-secondary" href="#hero-products">
-                      Link
-                    </a>
-                  </div>
+                  <span className="status-chip" data-tone="positive">
+                    {row.doSay}
+                  </span>
+                  <span className="status-chip" data-tone="danger">
+                    {row.dontSay}
+                  </span>
+                  <a className="button-link-secondary" href="#hero-products">
+                    Link
+                  </a>
                 </article>
               ))}
             </div>
-          </article>
+          </section>
 
-          <article className="settings-card" id="hero-products">
-            <div className="settings-card-head">
+          <section className="control-card" id="hero-products">
+            <div className="control-card-head">
               <div>
-                <span className="pill">Hero products</span>
-                <h2 className="settings-card-title">What the brand should push most clearly</h2>
-                <p className="settings-card-copy">
-                  Hero products help the operating system decide where content,
-                  merchandising, and reporting attention should concentrate.
-                </p>
+                <p className="command-mini-kicker">Hero products</p>
+                <h2>Priority product set</h2>
+                <p>These are the products the workspace should keep visible in briefs, recommendations, and planning.</p>
               </div>
             </div>
 
-            <div className="settings-hero-grid">
+            <div className="control-product-grid">
               {profile.heroProducts.map((product, index) => (
-                <article key={product} className="settings-hero-card">
-                  <div
-                    className="settings-hero-swatch"
-                    style={{ background: productGradient(index) }}
-                  >
+                <article key={product} className="control-product-card">
+                  <div className="control-product-swatch" style={{ background: productGradient(index) }}>
                     Hero product
                   </div>
-                  <div className="settings-hero-head">
-                    <div>
-                      <h3 className="settings-hero-title">{product}</h3>
-                      <p className="settings-item-note">
-                        Keep this product visible in recommendations, briefs, and
-                        calendars.
-                      </p>
-                    </div>
+                  <div>
+                    <strong>{product}</strong>
+                    <p>Keep this product visible in recommendations, briefs, and calendars.</p>
                   </div>
                 </article>
               ))}
             </div>
-
-            <div className="settings-divider" />
 
             <label className="field-stack">
               <span className="field-label">Hero products</span>
-              <input
-                className="text-input"
-                defaultValue={profile.heroProducts.join(", ")}
-                name="heroProducts"
-              />
+              <input className="text-input" defaultValue={profile.heroProducts.join(", ")} name="heroProducts" />
             </label>
-          </article>
+          </section>
 
-          <article className="settings-card" id="personas">
-            <div className="settings-card-head">
+          <section className="control-card" id="personas">
+            <div className="control-card-head">
               <div>
-                <span className="pill">Customer personas</span>
-                <h2 className="settings-card-title">Who the brand is actually trying to move</h2>
-                <p className="settings-card-copy">
-                  Personas should stay sharp enough to help the team choose language,
-                  proof, and product emphasis quickly.
-                </p>
+                <p className="command-mini-kicker">Customer personas</p>
+                <h2>Who the brand is actually trying to move</h2>
+                <p>Personas should be sharp enough to help the team choose language, proof, and product emphasis quickly.</p>
               </div>
             </div>
 
-            <div className="settings-persona-grid">
+            <div className="control-persona-grid">
               {profile.customerPersonas.map((persona, index) => (
-                <article key={persona} className="settings-persona-card">
-                  <div className="settings-persona-avatar">
+                <article key={persona} className="control-persona-card">
+                  <div className="control-persona-avatar">
                     {persona
                       .split(" ")
                       .map((part) => part[0])
@@ -347,17 +231,12 @@ export default async function BrandMemoryPage({ params }: BrandMemoryPageProps) 
                       .slice(0, 2)
                       .toUpperCase()}
                   </div>
-                  <p className="settings-persona-tag">Persona {index + 1}</p>
-                  <h3 className="settings-persona-name">{persona}</h3>
-                  <p className="settings-persona-meta">
-                    Update this when a different buyer or usage story should anchor the
-                    workspace.
-                  </p>
+                  <span>Persona {index + 1}</span>
+                  <strong>{persona}</strong>
+                  <p>Update this whenever a different buyer or usage story should anchor the workspace.</p>
                 </article>
               ))}
             </div>
-
-            <div className="settings-divider" />
 
             <label className="field-stack">
               <span className="field-label">Customer personas</span>
@@ -367,63 +246,41 @@ export default async function BrandMemoryPage({ params }: BrandMemoryPageProps) 
                 name="customerPersonas"
               />
             </label>
-
-            <div className="settings-card-actions">
-              <button className="button-link" type="submit">
-                Save Brand Voice
-              </button>
-            </div>
-          </article>
+          </section>
         </div>
 
-        <aside className="settings-admin-rail">
-          <article className="settings-card">
-            <div className="settings-card-head">
+        <aside className="control-rail">
+          <article className="control-score-card">
+            <span>Brand score</span>
+            <strong>{completenessScore}%</strong>
+            <p>Completeness based on positioning, customer, tone, hero products, phrasing rules, and personas.</p>
+          </article>
+
+          <article className="control-card">
+            <div className="control-card-head">
               <div>
-                <span className="pill">Consistency guide</span>
-                <h2 className="settings-card-title">How to keep the memory useful</h2>
-                <p className="settings-card-copy">
-                  Keep the layer opinionated, brief, and close enough to the actual
-                  brand that the team can trust it in review.
-                </p>
+                <p className="command-mini-kicker">Consistency guide</p>
+                <h2>How to keep memory useful</h2>
+                <p>Keep the layer opinionated, brief, and close enough to the actual brand that the team can trust it in review.</p>
               </div>
             </div>
-
-            <div className="settings-guidance-list">
-              <article className="settings-guidance-item">
-                <h3 className="settings-item-title">Avoid generic vibes</h3>
-                <p className="settings-item-copy">
-                  Replace abstract adjectives with proof, ingredients, origin, or the
-                  specific customer outcome the brand owns.
-                </p>
+            <div className="control-note-stack">
+              <article>
+                <strong>Avoid generic vibes.</strong>
+                <p>Replace abstract adjectives with proof, ingredients, origin, or the specific outcome the brand owns.</p>
               </article>
-              <article className="settings-guidance-item">
-                <h3 className="settings-item-title">Use the brand’s actual language</h3>
-                <p className="settings-item-copy">
-                  The memory should sound like a sharp creative brief, not like a
-                  taxonomy dump for a model.
-                </p>
+              <article>
+                <strong>Use the brand’s actual language.</strong>
+                <p>The memory should sound like a sharp creative brief, not like a taxonomy dump for a model.</p>
               </article>
-              <article className="settings-guidance-item">
-                <h3 className="settings-item-title">Refresh when launches change</h3>
-                <p className="settings-item-copy">
-                  Hero products, personas, and approved phrasing should evolve as the
-                  brand changes focus.
-                </p>
+              <article>
+                <strong>Refresh when launches change.</strong>
+                <p>Hero products, personas, and approved phrasing should evolve as the brand changes focus.</p>
               </article>
             </div>
           </article>
-
-          <article className="settings-score-card">
-            <p className="settings-mini-label">Brand score</p>
-            <p className="settings-score-value">{completenessScore}%</p>
-            <p className="settings-score-note">
-              Memory completeness based on positioning, target customer, tone,
-              hero products, phrasing rules, and personas.
-            </p>
-          </article>
         </aside>
-      </form>
-    </WorkspacePage>
+      </div>
+    </form>
   );
 }

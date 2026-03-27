@@ -1,8 +1,4 @@
-import {
-  EditorialListPanel,
-  type PresentationTone
-} from "../../../../components/data-presentation";
-import { WorkspacePage } from "../../../../components/workspace-page";
+import Link from "next/link";
 import {
   getCustomerOpsNarrative,
   listRetentionSignalsAsync
@@ -14,19 +10,11 @@ type RetentionPageProps = {
   }>;
 };
 
-function churnTone(churnRisk: string): PresentationTone {
-  if (churnRisk === "high") {
-    return "danger";
-  }
-
-  if (churnRisk === "medium") {
-    return "warning";
-  }
-
-  return "positive";
+function parsePercent(value: string) {
+  return Number.parseFloat(value.replace("%", "")) || 0;
 }
 
-function stateTone(state: string): PresentationTone {
+function stateTone(state: string) {
   if (state === "acted") {
     return "positive";
   }
@@ -42,176 +30,246 @@ function stateTone(state: string): PresentationTone {
   return "neutral";
 }
 
+function riskTone(risk: string) {
+  if (risk === "high") {
+    return "danger";
+  }
+
+  if (risk === "medium") {
+    return "warning";
+  }
+
+  return "positive";
+}
+
 export default async function RetentionPage({ params }: RetentionPageProps) {
   const { brandId } = await params;
   const items = await listRetentionSignalsAsync(brandId);
-  const primaryItem = items[0];
+  const primaryItem = items[0] ?? null;
+  const repeatAverage =
+    items.length > 0
+      ? `${(items.reduce((sum, item) => sum + parsePercent(item.repeatPurchaseRate), 0) / items.length).toFixed(1)}%`
+      : "0.0%";
+  const highRiskCount = items.filter((item) => item.churnRisk === "high").length;
+  const plansInMotion = items.filter(
+    (item) => item.state === "planned" || item.state === "acted"
+  ).length;
+  const linkedDraftCount = items.filter((item) => item.linkedDraftHref).length;
 
   return (
-    <WorkspacePage
-      model={{
-        kicker: "Retention",
-        title: "Repeat-purchase and lifecycle opportunity board",
-        description: getCustomerOpsNarrative(brandId),
-        actions: [
-          {
-            label: "Open Content Studio",
-            href: `/brands/${brandId}/content`
-          },
-          {
-            label: "Open Reports",
-            href: `/brands/${brandId}/reports`,
-            tone: "secondary"
-          }
-        ],
-        stats: [
-          {
-            label: "Retention signals",
-            value: `${items.length}`,
-            note: "Current lifecycle opportunities being tracked."
-          },
-          {
-            label: "High-risk segments",
-            value: `${items.filter((item) => item.churnRisk === "high").length}`,
-            note: "Segments that need intervention before they drift out of the repeat window."
-          },
-          {
-            label: "Plans in motion",
-            value: `${items.filter((item) => item.state === "planned" || item.state === "acted").length}`,
-            note: "Retention signals already routed into action."
-          }
-        ]
-      }}
-    >
-      <section className="editorial-layout">
-        <div className="editorial-main">
-          <EditorialListPanel
-            label="Segments"
-            title="Lifecycle opportunities"
-            description="These signals should help the team decide where retention work creates the most leverage right now."
-            items={items.map((item) => ({
-              eyebrow: item.segment,
-              title: item.title,
-              description: `${item.evidence} ${item.implication} ${item.recommendation}`,
-              value: item.repeatPurchaseRate,
-              note: item.state,
-              tags: [
-                { label: item.churnRisk, tone: churnTone(item.churnRisk) },
-                { label: item.repeatPurchaseRate, tone: "info" },
-                { label: item.state, tone: stateTone(item.state) }
-              ],
-              actions: [
-                {
-                  label: "View product",
-                  href: item.productHref,
-                  tone: "secondary"
-                },
-                ...(item.linkedDraftHref
-                  ? [
-                      {
-                        label: "Open lifecycle draft",
-                        href: item.linkedDraftHref,
-                        tone: "primary" as const
-                      }
-                    ]
-                  : [
-                      {
-                        label: "Generate retention ideas",
-                        href: `/api/brands/${brandId}/retention/${item.id}/generate-draft`,
-                        method: "post" as const,
-                        tone: "primary" as const
-                      }
-                    ]),
-                ...(item.state !== "flagged"
-                  ? [
-                      {
-                        label: "Flag segment",
-                        href: `/api/brands/${brandId}/retention/${item.id}/flag`,
-                        method: "post" as const,
-                        tone: "secondary" as const,
-                        fields: [
-                          {
-                            name: "next",
-                            value: `/brands/${brandId}/retention`
-                          }
-                        ]
-                      }
-                    ]
-                  : []),
-                ...(item.state !== "planned"
-                  ? [
-                      {
-                        label: "Create lifecycle plan",
-                        href: `/api/brands/${brandId}/retention/${item.id}/create-lifecycle-plan`,
-                        method: "post" as const,
-                        tone: "secondary" as const,
-                        fields: [
-                          {
-                            name: "next",
-                            value: `/brands/${brandId}/retention`
-                          }
-                        ]
-                      }
-                    ]
-                  : [])
-              ]
-            }))}
-            tone="warm"
-          />
+    <section className="ops-intelligence-suite">
+      <header className="command-header">
+        <div className="command-header-copy">
+          <p className="command-kicker">Retention</p>
+          <h1 className="command-title">Retention Intelligence</h1>
+          <p className="command-description">{getCustomerOpsNarrative(brandId)}</p>
         </div>
 
-        <aside className="editorial-rail">
+        <div className="command-actions">
+          <Link className="command-secondary-button" href={`/brands/${brandId}/reports`}>
+            Export Cohort
+          </Link>
           {primaryItem ? (
-            <section className="editorial-section" data-tone="ink">
-              <p className="editorial-section-label">Opportunity analysis</p>
-              <h2 className="editorial-section-title">{primaryItem.title}</h2>
-              <div className="editorial-timeline">
-                <article className="editorial-timeline-item">
-                  <p className="editorial-timeline-label">The evidence</p>
-                  <h3 className="editorial-timeline-title">{primaryItem.evidence}</h3>
-                  <p className="editorial-timeline-copy">{primaryItem.implication}</p>
-                </article>
-                <article className="editorial-timeline-item">
-                  <p className="editorial-timeline-label">Recommendation</p>
-                  <h3 className="editorial-timeline-title">{primaryItem.recommendation}</h3>
-                  <p className="editorial-timeline-copy">
-                    Churn risk: {primaryItem.churnRisk}
+            primaryItem.linkedDraftHref ? (
+              <Link className="command-primary-button" href={primaryItem.linkedDraftHref}>
+                Generate Retention Ideas
+              </Link>
+            ) : (
+              <form
+                action={`/api/brands/${brandId}/retention/${primaryItem.id}/generate-draft`}
+                className="inline-form"
+                method="post"
+              >
+                <button className="command-primary-button" type="submit">
+                  Generate Retention Ideas
+                </button>
+              </form>
+            )
+          ) : null}
+          {primaryItem && primaryItem.state !== "flagged" ? (
+            <form
+              action={`/api/brands/${brandId}/retention/${primaryItem.id}/flag`}
+              className="inline-form"
+              method="post"
+            >
+              <input name="next" type="hidden" value={`/brands/${brandId}/retention`} />
+              <button className="command-secondary-button" type="submit">
+                Flag Segment
+              </button>
+            </form>
+          ) : null}
+          {primaryItem && primaryItem.state !== "planned" ? (
+            <form
+              action={`/api/brands/${brandId}/retention/${primaryItem.id}/create-lifecycle-plan`}
+              className="inline-form"
+              method="post"
+            >
+              <input name="next" type="hidden" value={`/brands/${brandId}/retention`} />
+              <button className="command-secondary-button" type="submit">
+                Create Lifecycle Plan
+              </button>
+            </form>
+          ) : null}
+        </div>
+      </header>
+
+      <div className="ops-intelligence-kpis">
+        <article className="ops-intelligence-kpi">
+          <span>Retention rate</span>
+          <strong>{repeatAverage}</strong>
+          <p>Average repeat-purchase signal across the currently tracked lifecycle segments.</p>
+        </article>
+        <article className="ops-intelligence-kpi">
+          <span>High-risk segments</span>
+          <strong>{highRiskCount}</strong>
+          <p>Segments that need intervention before the next repeat window closes.</p>
+        </article>
+        <article className="ops-intelligence-kpi">
+          <span>Plans in motion</span>
+          <strong>{plansInMotion}</strong>
+          <p>Signals already routed into an active lifecycle response.</p>
+        </article>
+        <article className="ops-intelligence-kpi" data-tone="warning">
+          <span>Drafts linked</span>
+          <strong>{linkedDraftCount}</strong>
+          <p>Retention signals already translated into reusable content or lifecycle assets.</p>
+        </article>
+      </div>
+
+      <div className="ops-intelligence-grid">
+        <section className="ops-intelligence-table-shell">
+          <div className="ops-intelligence-table-head ops-intelligence-table-head-retention">
+            <span>Segment</span>
+            <span>Repeat Rate</span>
+            <span>Risk</span>
+            <span>State</span>
+            <span>Actions</span>
+          </div>
+
+          <div className="ops-intelligence-body">
+            {items.map((item, index) => (
+              <article
+                key={item.id}
+                className="ops-intelligence-row ops-intelligence-row-retention"
+                data-active={index === 0}
+              >
+                <div className="ops-intelligence-cell-primary">
+                  <strong>{item.title}</strong>
+                  <p>
+                    {item.segment}. {item.evidence}
                   </p>
-                </article>
+                </div>
+                <div className="ops-intelligence-cell-metric">
+                  <strong>{item.repeatPurchaseRate}</strong>
+                  <span>Repeat rate</span>
+                </div>
+                <div className="record-meta">
+                  <span className="status-chip" data-tone={riskTone(item.churnRisk)}>
+                    {item.churnRisk} risk
+                  </span>
+                </div>
+                <div className="record-meta">
+                  <span className="status-chip" data-tone={stateTone(item.state)}>
+                    {item.state}
+                  </span>
+                </div>
+                <div className="ops-intelligence-actions">
+                  <Link className="button-link-secondary" href={item.productHref}>
+                    View Product
+                  </Link>
+                  {item.linkedDraftHref ? (
+                    <Link className="button-link" href={item.linkedDraftHref}>
+                      Open Draft
+                    </Link>
+                  ) : (
+                    <form
+                      action={`/api/brands/${brandId}/retention/${item.id}/generate-draft`}
+                      className="inline-form"
+                      method="post"
+                    >
+                      <button className="button-link" type="submit">
+                        Generate Retention Ideas
+                      </button>
+                    </form>
+                  )}
+                  {item.state !== "flagged" ? (
+                    <form
+                      action={`/api/brands/${brandId}/retention/${item.id}/flag`}
+                      className="inline-form"
+                      method="post"
+                    >
+                      <input name="next" type="hidden" value={`/brands/${brandId}/retention`} />
+                      <button className="button-link-secondary" type="submit">
+                        Flag Segment
+                      </button>
+                    </form>
+                  ) : null}
+                  {item.state !== "planned" ? (
+                    <form
+                      action={`/api/brands/${brandId}/retention/${item.id}/create-lifecycle-plan`}
+                      className="inline-form"
+                      method="post"
+                    >
+                      <input name="next" type="hidden" value={`/brands/${brandId}/retention`} />
+                      <button className="button-link-secondary" type="submit">
+                        Create Lifecycle Plan
+                      </button>
+                    </form>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <aside className="ops-intelligence-side">
+          {primaryItem ? (
+            <article className="ops-intelligence-card">
+              <p className="command-mini-kicker">Active Segment</p>
+              <h2>{primaryItem.title}</h2>
+              <div className="ops-intelligence-block">
+                <span>Evidence</span>
+                <p>{primaryItem.evidence}</p>
               </div>
-            </section>
+              <div className="ops-intelligence-block">
+                <span>Implication</span>
+                <p>{primaryItem.implication}</p>
+              </div>
+              <div className="ops-intelligence-block">
+                <span>Recommendation</span>
+                <p>{primaryItem.recommendation}</p>
+              </div>
+              <div className="record-meta">
+                <span className="status-chip" data-tone={riskTone(primaryItem.churnRisk)}>
+                  {primaryItem.churnRisk} risk
+                </span>
+                <span className="status-chip" data-tone="info">
+                  {primaryItem.repeatPurchaseRate}
+                </span>
+              </div>
+            </article>
           ) : null}
 
-          <EditorialListPanel
-            label="Principles"
-            title="How to use retention signals"
-            description="Retention work should stay tightly tied to specific segments, products, and repeat windows."
-            items={[
-              {
-                eyebrow: "Repeat value",
-                title: "Treat retention as a product story problem",
-                description:
-                  "The best lifecycle plans reinforce why a product earns the next order, not just when to ask for it.",
-                tags: [{ label: "Repeat value", tone: "positive" }]
-              },
-              {
-                eyebrow: "Early warning",
-                title: "Flag segments before they become a revenue problem",
-                description:
-                  "The earlier the team sees churn risk, the easier it is to answer with messaging and education instead of expensive reacquisition.",
-                tags: [{ label: "Early warning", tone: "warning" }]
-              },
-              {
-                eyebrow: "Execution",
-                title: "Convert the signal into an asset quickly",
-                description:
-                  "If a segment matters, it should turn into a lifecycle brief or content draft instead of staying abstract.",
-                tags: [{ label: "Execution", tone: "info" }]
-              }
-            ]}
-          />
+          <article className="ops-intelligence-card" data-tone="warm">
+            <p className="command-mini-kicker">Lifecycle posture</p>
+            <h2>How to use retention signals</h2>
+            <div className="ops-intelligence-notes">
+              <article>
+                <strong>Treat retention like a product story problem.</strong>
+                <p>Every plan should reinforce why the product earns another order, not just when to ask for one.</p>
+              </article>
+              <article>
+                <strong>Flag segments before they become a revenue hole.</strong>
+                <p>Earlier warnings make it easier to respond with messaging instead of expensive reacquisition.</p>
+              </article>
+              <article>
+                <strong>Turn the signal into an asset quickly.</strong>
+                <p>High-leverage lifecycle segments should become real drafts or briefs, not stay abstract.</p>
+              </article>
+            </div>
+          </article>
         </aside>
-      </section>
-    </WorkspacePage>
+      </div>
+    </section>
   );
 }

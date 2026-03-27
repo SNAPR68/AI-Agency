@@ -5789,6 +5789,518 @@ main {
   background: #fff3e4;
 }
 
+.ops-intelligence-suite,
+.control-suite {
+  display: grid;
+  gap: 28px;
+}
+
+.ops-intelligence-kpis,
+.control-stat-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.control-stat-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ops-intelligence-kpi,
+.control-stat-card,
+.control-score-card {
+  display: grid;
+  gap: 10px;
+  padding: 28px;
+  border-radius: 28px;
+  background: #fffdf9;
+  border: 1px solid rgba(165, 112, 0, 0.12);
+  box-shadow: 0 20px 48px rgba(70, 46, 0, 0.07);
+}
+
+.ops-intelligence-kpi[data-tone="warning"],
+.control-score-card {
+  background: #fff3e4;
+}
+
+.ops-intelligence-kpi span,
+.control-stat-card span,
+.control-score-card span,
+.control-tone-card span,
+.control-persona-card span {
+  color: rgba(128, 87, 0, 0.62);
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.ops-intelligence-kpi strong,
+.control-stat-card strong,
+.control-score-card strong {
+  color: #2b2d38;
+  font-family: "Newsreader", Georgia, serif;
+  font-size: clamp(2.2rem, 3vw, 3.3rem);
+  font-weight: 500;
+  line-height: 0.95;
+}
+
+.ops-intelligence-kpi p,
+.control-stat-card p,
+.control-score-card p,
+.control-side-card p,
+.control-provider-copy,
+.control-sync-item p,
+.control-sync-item span,
+.control-note-card p,
+.control-card-head p:last-child,
+.control-policy-card p,
+.control-rule-row p,
+.control-product-card p,
+.control-persona-card p,
+.control-note-stack p,
+.control-tone-card p,
+.control-member-primary p {
+  margin: 0;
+  color: rgba(70, 46, 0, 0.7);
+  line-height: 1.65;
+}
+
+.ops-intelligence-grid,
+.control-hero-grid,
+.control-memory-grid,
+.control-users-grid,
+.control-automation-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.ops-intelligence-grid,
+.control-memory-grid,
+.control-users-grid,
+.control-automation-grid {
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.72fr);
+}
+
+.control-hero-grid {
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+}
+
+.ops-intelligence-table-shell,
+.ops-intelligence-card,
+.control-card,
+.control-hero-card,
+.control-side-card {
+  display: grid;
+  gap: 20px;
+  padding: 28px;
+  border-radius: 28px;
+  background: #fffdf9;
+  border: 1px solid rgba(165, 112, 0, 0.12);
+  box-shadow: 0 20px 48px rgba(70, 46, 0, 0.07);
+}
+
+.ops-intelligence-table-shell {
+  padding: 0;
+  overflow: hidden;
+}
+
+.ops-intelligence-card[data-tone="warm"],
+.control-side-card,
+.control-provider-card,
+.control-sync-item,
+.control-note-card,
+.control-policy-card,
+.control-tone-card,
+.control-rule-row,
+.control-product-card,
+.control-persona-card,
+.control-note-stack article,
+.control-member-row,
+.control-member-row-muted {
+  background: #fff3e4;
+}
+
+.ops-intelligence-card h2,
+.control-card h2,
+.control-hero-card h2,
+.control-side-card h2,
+.control-provider-card h2,
+.control-sync-item h3,
+.control-policy-card h3 {
+  margin: 0;
+  color: #2b2d38;
+  font-family: var(--font-headline);
+}
+
+.ops-intelligence-card h2,
+.control-card h2,
+.control-hero-card h2,
+.control-side-card h2,
+.control-provider-card h2 {
+  font-size: clamp(1.9rem, 2.6vw, 2.5rem);
+  font-weight: 500;
+  line-height: 0.98;
+}
+
+.control-sync-item h3,
+.control-policy-card h3 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.ops-intelligence-side,
+.control-memory-main,
+.control-users-main,
+.control-automation-main,
+.control-rail,
+.control-sync-list,
+.control-policy-list,
+.control-note-stack {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
+.ops-intelligence-table-head {
+  display: grid;
+  gap: 18px;
+  padding: 18px 24px;
+  background: #fff3e4;
+  border-bottom: 1px solid rgba(165, 112, 0, 0.12);
+  color: rgba(128, 87, 0, 0.72);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.ops-intelligence-table-head-retention {
+  grid-template-columns: minmax(0, 1.5fr) minmax(120px, 0.55fr) minmax(120px, 0.5fr) minmax(120px, 0.5fr) minmax(260px, 1fr);
+}
+
+.ops-intelligence-table-head-cx,
+.ops-intelligence-table-head-support {
+  grid-template-columns: minmax(0, 1.45fr) minmax(120px, 0.5fr) minmax(120px, 0.5fr) minmax(120px, 0.55fr) minmax(280px, 1fr);
+}
+
+.ops-intelligence-body {
+  display: grid;
+}
+
+.ops-intelligence-row {
+  display: grid;
+  gap: 18px;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(165, 112, 0, 0.08);
+}
+
+.ops-intelligence-row:last-child {
+  border-bottom: 0;
+}
+
+.ops-intelligence-row[data-active="true"] {
+  background: rgba(255, 230, 198, 0.26);
+}
+
+.ops-intelligence-row-retention {
+  grid-template-columns: minmax(0, 1.5fr) minmax(120px, 0.55fr) minmax(120px, 0.5fr) minmax(120px, 0.5fr) minmax(260px, 1fr);
+}
+
+.ops-intelligence-row-cx,
+.ops-intelligence-row-support {
+  grid-template-columns: minmax(0, 1.45fr) minmax(120px, 0.5fr) minmax(120px, 0.5fr) minmax(120px, 0.55fr) minmax(280px, 1fr);
+}
+
+.ops-intelligence-cell-primary {
+  display: grid;
+  gap: 8px;
+}
+
+.ops-intelligence-cell-primary strong,
+.control-member-primary strong {
+  color: #2b2d38;
+  font-family: "Manrope", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.ops-intelligence-cell-metric {
+  display: grid;
+  gap: 5px;
+}
+
+.ops-intelligence-cell-metric strong,
+.control-note-card strong,
+.control-note-stack strong,
+.control-product-card strong,
+.control-persona-card strong {
+  color: #2b2d38;
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 1.18rem;
+  font-weight: 500;
+}
+
+.ops-intelligence-cell-metric span,
+.ops-intelligence-block span {
+  color: rgba(128, 87, 0, 0.58);
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ops-intelligence-actions,
+.control-provider-actions,
+.control-form-actions,
+.control-member-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.ops-intelligence-block,
+.control-note-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #fff3e4;
+}
+
+.ops-intelligence-notes,
+.control-note-stack,
+.control-metric-list,
+.control-sync-list,
+.control-policy-list {
+  display: grid;
+  gap: 14px;
+}
+
+.ops-intelligence-notes article,
+.control-note-stack article {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #fff3e4;
+}
+
+.ops-intelligence-notes strong {
+  color: #2b2d38;
+  font-family: "Manrope", sans-serif;
+  font-size: 0.95rem;
+}
+
+.control-card-head,
+.control-hero-top,
+.control-provider-head,
+.control-sync-head,
+.control-policy-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.control-form-grid,
+.control-voice-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.control-form-grid-quad {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.control-form-grid-double,
+.control-voice-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.control-form-actions-full {
+  grid-column: 1 / -1;
+}
+
+.control-metric-list article {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.control-metric-list article span {
+  color: rgba(70, 46, 0, 0.62);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.control-metric-list article strong {
+  color: #2b2d38;
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 500;
+}
+
+.control-provider-grid,
+.control-product-grid,
+.control-persona-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.control-provider-card,
+.control-sync-item,
+.control-policy-card,
+.control-tone-card,
+.control-product-card,
+.control-persona-card {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(165, 112, 0, 0.1);
+}
+
+.control-provider-head p:last-child {
+  margin-top: 6px;
+}
+
+.control-rule-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.control-rule-row {
+  display: grid;
+  gap: 16px;
+  align-items: center;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.control-product-swatch {
+  min-height: 120px;
+  padding: 16px;
+  border-radius: 18px;
+  display: flex;
+  align-items: flex-end;
+  color: rgba(255, 247, 235, 0.92);
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.control-tone-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.control-tone-tags strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: #e4e2dd;
+  color: #51524e;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.control-users-table {
+  display: grid;
+  gap: 0;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(165, 112, 0, 0.12);
+  background: #fffdf9;
+}
+
+.control-users-head,
+.control-member-row {
+  display: grid;
+  gap: 16px;
+  align-items: center;
+  grid-template-columns: minmax(0, 1.25fr) minmax(160px, 0.75fr) minmax(120px, 0.5fr) minmax(140px, 0.55fr) minmax(320px, 1fr);
+}
+
+.control-users-head {
+  padding: 18px 24px;
+  background: #fff3e4;
+  border-bottom: 1px solid rgba(165, 112, 0, 0.12);
+  color: rgba(128, 87, 0, 0.72);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.control-users-body {
+  display: grid;
+}
+
+.control-member-row,
+.control-member-row-muted {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(165, 112, 0, 0.08);
+}
+
+.control-member-row:last-child,
+.control-member-row-muted:last-child {
+  border-bottom: 0;
+}
+
+.control-inline-field {
+  min-width: 0;
+}
+
+.control-member-last {
+  margin: 0;
+  color: rgba(70, 46, 0, 0.62);
+  font-size: 0.8rem;
+}
+
+.control-persona-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e4e2dd;
+  color: #51524e;
+  font-family: "Manrope", sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.control-automation-main {
+  display: grid;
+  gap: 24px;
+}
+
+.control-policy-list {
+  display: grid;
+  gap: 16px;
+}
+
 @media (max-width: 940px) {
   .app-sidebar,
   .app-topbar {
@@ -5887,6 +6399,12 @@ main {
   .editorial-layout,
   .editorial-story-grid,
   .settings-admin-layout,
+  .ops-intelligence-kpis,
+  .ops-intelligence-grid,
+  .control-hero-grid,
+  .control-memory-grid,
+  .control-users-grid,
+  .control-automation-grid,
   .settings-split-grid,
   .studio-layout,
   .planner-layout,
@@ -5908,12 +6426,28 @@ main {
     grid-template-columns: 1fr;
   }
 
+  .control-stat-grid,
+  .control-provider-grid,
+  .control-product-grid,
+  .control-persona-grid,
+  .control-form-grid,
+  .control-form-grid-double,
+  .control-form-grid-quad,
+  .control-voice-grid,
+  .control-rule-row,
+  .control-users-head,
+  .control-member-row,
+  .control-member-row-muted {
+    grid-template-columns: 1fr;
+  }
+
   .alerts-table-head,
   .archive-table-head,
   .commerce-table-head,
   .market-table-head,
   .workflow-table-head,
   .ops-table-head,
+  .ops-intelligence-table-head,
   .archive-ledger-head {
     display: none;
   }
@@ -5927,6 +6461,7 @@ main {
   .workflow-row,
   .workflow-row-publishing,
   .ops-row,
+  .ops-intelligence-row,
   .archive-ledger-row {
     grid-template-columns: 1fr;
   }
@@ -5936,6 +6471,10 @@ main {
   .commerce-actions-cell,
   .opportunity-actions,
   .ops-cell-actions,
+  .ops-intelligence-actions,
+  .control-provider-actions,
+  .control-form-actions,
+  .control-member-actions,
   .archive-ledger-date {
     justify-content: flex-start;
     justify-items: start;

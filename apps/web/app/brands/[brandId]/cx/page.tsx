@@ -1,8 +1,4 @@
-import {
-  EditorialListPanel,
-  type PresentationTone
-} from "../../../../components/data-presentation";
-import { WorkspacePage } from "../../../../components/workspace-page";
+import Link from "next/link";
 import {
   getCustomerOpsNarrative,
   listCxIssuesAsync
@@ -14,7 +10,7 @@ type CxOpsPageProps = {
   }>;
 };
 
-function severityTone(severity: string): PresentationTone {
+function severityTone(severity: string) {
   if (severity === "high") {
     return "danger";
   }
@@ -26,7 +22,7 @@ function severityTone(severity: string): PresentationTone {
   return "neutral";
 }
 
-function stateTone(state: string): PresentationTone {
+function stateTone(state: string) {
   if (state === "resolved") {
     return "positive";
   }
@@ -41,172 +37,216 @@ function stateTone(state: string): PresentationTone {
 export default async function CxOpsPage({ params }: CxOpsPageProps) {
   const { brandId } = await params;
   const issues = await listCxIssuesAsync(brandId);
-  const primaryIssue = issues[0];
+  const primaryIssue = issues[0] ?? null;
+  const activeCount = issues.filter((item) => item.state !== "resolved").length;
+  const highSeverity = issues.filter((item) => item.severity === "high").length;
+  const messagingReady = issues.filter((item) => item.linkedDraftHref).length;
 
   return (
-    <WorkspacePage
-      model={{
-        kicker: "CX Ops",
-        title: "Returns, delivery, and messaging issue board",
-        description: getCustomerOpsNarrative(brandId),
-        actions: [
-          {
-            label: "Open Support Ops",
-            href: `/brands/${brandId}/support-ops`
-          },
-          {
-            label: "Open Content Studio",
-            href: `/brands/${brandId}/content`,
-            tone: "secondary"
-          }
-        ],
-        stats: [
-          {
-            label: "CX issues",
-            value: `${issues.length}`,
-            note: "Customer-experience issues currently being tracked."
-          },
-          {
-            label: "High severity",
-            value: `${issues.filter((item) => item.severity === "high").length}`,
-            note: "Issues that deserve immediate owner assignment."
-          },
-          {
-            label: "Resolved",
-            value: `${issues.filter((item) => item.state === "resolved").length}`,
-            note: "Issues already addressed in the workflow."
-          }
-        ]
-      }}
-    >
-      <section className="editorial-layout">
-        <div className="editorial-main">
-          <EditorialListPanel
-            label="Issues"
-            title="Customer-experience queue"
-            description="Use this board to keep operational friction from becoming a trust or retention problem."
-            items={issues.map((item) => ({
-              eyebrow: item.category,
-              title: item.title,
-              description: `${item.evidence} ${item.implication} ${item.recommendation}`,
-              value: item.severity,
-              note: item.state,
-              tags: [
-                { label: item.severity, tone: severityTone(item.severity) },
-                { label: item.state, tone: stateTone(item.state) }
-              ],
-              actions: [
-                {
-                  label: "View product",
-                  href: item.productHref,
-                  tone: "secondary"
-                },
-                ...(item.linkedDraftHref
-                  ? [
-                      {
-                        label: "Open messaging draft",
-                        href: item.linkedDraftHref,
-                        tone: "primary" as const
-                      }
-                    ]
-                  : [
-                      {
-                        label: "Recommend messaging",
-                        href: `/api/brands/${brandId}/cx/${item.id}/recommend-messaging`,
-                        method: "post" as const,
-                        tone: "primary" as const
-                      }
-                    ]),
-                ...(item.state !== "assigned"
-                  ? [
-                      {
-                        label: "Assign owner",
-                        href: `/api/brands/${brandId}/cx/${item.id}/assign`,
-                        method: "post" as const,
-                        tone: "secondary" as const,
-                        fields: [
-                          {
-                            name: "next",
-                            value: `/brands/${brandId}/cx`
-                          }
-                        ]
-                      }
-                    ]
-                  : []),
-                ...(item.state !== "resolved"
-                  ? [
-                      {
-                        label: "Mark resolved",
-                        href: `/api/brands/${brandId}/cx/${item.id}/resolve`,
-                        method: "post" as const,
-                        tone: "secondary" as const,
-                        fields: [
-                          {
-                            name: "next",
-                            value: `/brands/${brandId}/cx`
-                          }
-                        ]
-                      }
-                    ]
-                  : [])
-              ]
-            }))}
-            tone="warm"
-          />
+    <section className="ops-intelligence-suite">
+      <header className="command-header">
+        <div className="command-header-copy">
+          <p className="command-kicker">CX Ops</p>
+          <h1 className="command-title">CX Operations</h1>
+          <p className="command-description">{getCustomerOpsNarrative(brandId)}</p>
         </div>
 
-        <aside className="editorial-rail">
+        <div className="command-actions">
+          <Link className="command-secondary-button" href={`/brands/${brandId}/alerts`}>
+            Create CX Alert
+          </Link>
           {primaryIssue ? (
-            <section className="editorial-section" data-tone="ink">
-              <p className="editorial-section-label">Issue resolution</p>
-              <h2 className="editorial-section-title">{primaryIssue.title}</h2>
-              <div className="editorial-timeline">
-                <article className="editorial-timeline-item">
-                  <p className="editorial-timeline-label">Recommended script</p>
-                  <h3 className="editorial-timeline-title">{primaryIssue.recommendation}</h3>
-                  <p className="editorial-timeline-copy">{primaryIssue.implication}</p>
-                </article>
-                <article className="editorial-timeline-item">
-                  <p className="editorial-timeline-label">Recommended actions</p>
-                  <h3 className="editorial-timeline-title">Assign, message, monitor</h3>
-                  <p className="editorial-timeline-copy">
-                    Severity: {primaryIssue.severity} • State: {primaryIssue.state}
+            primaryIssue.linkedDraftHref ? (
+              <Link className="command-primary-button" href={primaryIssue.linkedDraftHref}>
+                Recommend Messaging
+              </Link>
+            ) : (
+              <form
+                action={`/api/brands/${brandId}/cx/${primaryIssue.id}/recommend-messaging`}
+                className="inline-form"
+                method="post"
+              >
+                <button className="command-primary-button" type="submit">
+                  Recommend Messaging
+                </button>
+              </form>
+            )
+          ) : null}
+          {primaryIssue && primaryIssue.state !== "assigned" ? (
+            <form
+              action={`/api/brands/${brandId}/cx/${primaryIssue.id}/assign`}
+              className="inline-form"
+              method="post"
+            >
+              <input name="next" type="hidden" value={`/brands/${brandId}/cx`} />
+              <button className="command-secondary-button" type="submit">
+                Assign Owner
+              </button>
+            </form>
+          ) : null}
+          <Link className="command-secondary-button" href={`/brands/${brandId}/reports`}>
+            Export Issues
+          </Link>
+        </div>
+      </header>
+
+      <div className="ops-intelligence-kpis">
+        <article className="ops-intelligence-kpi">
+          <span>Active issues</span>
+          <strong>{activeCount}</strong>
+          <p>Current delivery, returns, and message-friction issues still open in the workspace.</p>
+        </article>
+        <article className="ops-intelligence-kpi">
+          <span>High severity</span>
+          <strong>{highSeverity}</strong>
+          <p>Customer issues that should move fast before they degrade trust.</p>
+        </article>
+        <article className="ops-intelligence-kpi">
+          <span>Messaging ready</span>
+          <strong>{messagingReady}</strong>
+          <p>Issues already converted into reusable customer-facing copy or drafts.</p>
+        </article>
+        <article className="ops-intelligence-kpi" data-tone="warning">
+          <span>Resolved</span>
+          <strong>{issues.filter((item) => item.state === "resolved").length}</strong>
+          <p>Closed issues that have already been handled in messaging or operations.</p>
+        </article>
+      </div>
+
+      <div className="ops-intelligence-grid">
+        <section className="ops-intelligence-table-shell">
+          <div className="ops-intelligence-table-head ops-intelligence-table-head-cx">
+            <span>Issue</span>
+            <span>Severity</span>
+            <span>Status</span>
+            <span>Product</span>
+            <span>Actions</span>
+          </div>
+
+          <div className="ops-intelligence-body">
+            {issues.map((item, index) => (
+              <article
+                key={item.id}
+                className="ops-intelligence-row ops-intelligence-row-cx"
+                data-active={index === 0}
+              >
+                <div className="ops-intelligence-cell-primary">
+                  <strong>{item.title}</strong>
+                  <p>
+                    {item.category}. {item.evidence}
                   </p>
-                </article>
+                </div>
+                <div className="record-meta">
+                  <span className="status-chip" data-tone={severityTone(item.severity)}>
+                    {item.severity}
+                  </span>
+                </div>
+                <div className="record-meta">
+                  <span className="status-chip" data-tone={stateTone(item.state)}>
+                    {item.state}
+                  </span>
+                </div>
+                <div className="ops-intelligence-cell-metric">
+                  <strong>{item.category}</strong>
+                  <span>Issue lane</span>
+                </div>
+                <div className="ops-intelligence-actions">
+                  <Link className="button-link-secondary" href={item.productHref}>
+                    View Product
+                  </Link>
+                  {item.linkedDraftHref ? (
+                    <Link className="button-link" href={item.linkedDraftHref}>
+                      Open Draft
+                    </Link>
+                  ) : (
+                    <form
+                      action={`/api/brands/${brandId}/cx/${item.id}/recommend-messaging`}
+                      className="inline-form"
+                      method="post"
+                    >
+                      <button className="button-link" type="submit">
+                        Recommend Messaging
+                      </button>
+                    </form>
+                  )}
+                  {item.state !== "assigned" ? (
+                    <form
+                      action={`/api/brands/${brandId}/cx/${item.id}/assign`}
+                      className="inline-form"
+                      method="post"
+                    >
+                      <input name="next" type="hidden" value={`/brands/${brandId}/cx`} />
+                      <button className="button-link-secondary" type="submit">
+                        Assign Owner
+                      </button>
+                    </form>
+                  ) : null}
+                  {item.state !== "resolved" ? (
+                    <form
+                      action={`/api/brands/${brandId}/cx/${item.id}/resolve`}
+                      className="inline-form"
+                      method="post"
+                    >
+                      <input name="next" type="hidden" value={`/brands/${brandId}/cx`} />
+                      <button className="button-link-secondary" type="submit">
+                        Mark Resolved
+                      </button>
+                    </form>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <aside className="ops-intelligence-side">
+          {primaryIssue ? (
+            <article className="ops-intelligence-card">
+              <p className="command-mini-kicker">Selected issue</p>
+              <h2>{primaryIssue.title}</h2>
+              <div className="ops-intelligence-block">
+                <span>Evidence</span>
+                <p>{primaryIssue.evidence}</p>
               </div>
-            </section>
+              <div className="ops-intelligence-block">
+                <span>Impact</span>
+                <p>{primaryIssue.implication}</p>
+              </div>
+              <div className="ops-intelligence-block">
+                <span>Recommended messaging</span>
+                <p>{primaryIssue.recommendation}</p>
+              </div>
+              <div className="record-meta">
+                <span className="status-chip" data-tone={severityTone(primaryIssue.severity)}>
+                  {primaryIssue.severity}
+                </span>
+                <span className="status-chip" data-tone={stateTone(primaryIssue.state)}>
+                  {primaryIssue.state}
+                </span>
+              </div>
+            </article>
           ) : null}
 
-          <EditorialListPanel
-            label="Principles"
-            title="How to use CX ops"
-            description="The goal is to reduce trust-killing friction before it grows into repeat-purchase damage."
-            items={[
-              {
-                eyebrow: "Prevention",
-                title: "Fix the message before the ticket volume grows",
-                description:
-                  "Most CX issues are cheaper to solve in copy and expectation-setting than in support or refunds.",
-                tags: [{ label: "Prevention", tone: "positive" }]
-              },
-              {
-                eyebrow: "Ownership",
-                title: "Assign issues to keep them moving",
-                description:
-                  "An unassigned CX problem usually means customers will keep experiencing the same friction next week.",
-                tags: [{ label: "Ownership", tone: "warning" }]
-              },
-              {
-                eyebrow: "Scale",
-                title: "Turn repeated friction into reusable copy",
-                description:
-                  "If an issue repeats, the brand should probably ship new messaging, not just answer it one customer at a time.",
-                tags: [{ label: "Scale", tone: "info" }]
-              }
-            ]}
-          />
+          <article className="ops-intelligence-card" data-tone="warm">
+            <p className="command-mini-kicker">Operating posture</p>
+            <h2>How CX ops should be used</h2>
+            <div className="ops-intelligence-notes">
+              <article>
+                <strong>Fix the message before ticket volume grows.</strong>
+                <p>Most CX issues are cheaper to solve in expectations and copy than in support or refunds.</p>
+              </article>
+              <article>
+                <strong>Assign issues early.</strong>
+                <p>An unassigned CX issue usually means customers will keep hitting the same friction next week.</p>
+              </article>
+              <article>
+                <strong>Convert recurring friction into reusable copy.</strong>
+                <p>When the issue repeats, the brand should ship new messaging instead of answering it one customer at a time.</p>
+              </article>
+            </div>
+          </article>
         </aside>
-      </section>
-    </WorkspacePage>
+      </div>
+    </section>
   );
 }
