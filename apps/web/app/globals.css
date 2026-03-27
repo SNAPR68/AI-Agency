@@ -4104,11 +4104,11 @@ main {
 
 .product-story-title {
   margin: 0 0 14px;
-  font-family: "Newsreader", Georgia, serif;
-  font-size: clamp(3rem, 4.8vw, 4.9rem);
-  font-weight: 400;
-  letter-spacing: -0.05em;
-  line-height: 0.95;
+  font-family: "Lexend", "Inter", sans-serif;
+  font-size: clamp(2.3rem, 4vw, 3.3rem);
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 1;
 }
 
 .product-story-grid {
@@ -4121,9 +4121,13 @@ main {
   min-height: 420px;
   padding: 28px;
   display: grid;
+  border-radius: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
   background:
-    linear-gradient(180deg, rgba(255, 248, 242, 0.98), rgba(255, 243, 233, 0.94)),
-    radial-gradient(circle at top left, rgba(165, 112, 0, 0.12), transparent 50%);
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 42%),
+    radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.16), transparent 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.94));
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
 }
 
 .product-visual-badge,
@@ -4131,7 +4135,7 @@ main {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  color: rgba(70, 46, 0, 0.54);
+  color: rgba(71, 85, 105, 0.86);
   font-family: "Montserrat", sans-serif;
   font-size: 0.62rem;
   font-weight: 800;
@@ -4143,11 +4147,11 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "Newsreader", Georgia, serif;
-  font-size: clamp(6rem, 14vw, 11rem);
-  font-weight: 500;
+  font-family: "Lexend", "Inter", sans-serif;
+  font-size: clamp(5rem, 12vw, 8rem);
+  font-weight: 700;
   letter-spacing: -0.08em;
-  color: rgba(70, 46, 0, 0.78);
+  color: rgba(15, 23, 42, 0.82);
 }
 
 .product-stat-stack {
@@ -4188,7 +4192,7 @@ main {
 .product-signal-bar div {
   height: 8px;
   border-radius: 999px;
-  background: rgba(165, 112, 0, 0.12);
+  background: rgba(148, 163, 184, 0.2);
   overflow: hidden;
 }
 
@@ -4196,7 +4200,7 @@ main {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #8a5500, #d19000);
+  background: linear-gradient(90deg, #2563eb, #14b8a6);
 }
 
 .product-linked-list {
@@ -4209,7 +4213,8 @@ main {
   gap: 12px;
   padding: 18px;
   border-radius: 18px;
-  background: #fff2e3;
+  background: rgba(241, 245, 249, 0.94);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .product-format-list {
@@ -4239,9 +4244,9 @@ main {
   gap: 8px;
   padding: 24px;
   border-radius: 24px;
-  background: #fffaf5;
-  border: 1px solid rgba(165, 112, 0, 0.12);
-  box-shadow: 0 18px 44px rgba(70, 46, 0, 0.06);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.06);
 }
 
 .market-kpi-card span,
@@ -4249,21 +4254,22 @@ main {
   font-size: 0.69rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(128, 87, 0, 0.78);
+  color: rgba(37, 99, 235, 0.88);
   font-weight: 700;
 }
 
 .market-kpi-card strong,
 .workflow-kpi-card strong {
   font-size: 2.2rem;
-  font-family: var(--font-headline);
+  font-family: "Lexend", "Inter", sans-serif;
+  font-weight: 700;
   line-height: 1;
-  color: #2b2d38;
+  color: #0f172a;
 }
 
 .market-kpi-card p,
 .workflow-kpi-card p {
-  color: rgba(70, 46, 0, 0.72);
+  color: rgba(71, 85, 105, 0.92);
   line-height: 1.6;
   margin: 0;
 }
@@ -4278,10 +4284,10 @@ main {
 .workflow-table-shell,
 .publishing-panel {
   border-radius: 28px;
-  background: #fffdf9;
-  border: 1px solid rgba(165, 112, 0, 0.12);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.18);
   overflow: hidden;
-  box-shadow: 0 24px 60px rgba(70, 46, 0, 0.08);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
 }
 
 .market-table-head,
@@ -4290,9 +4296,9 @@ main {
   align-items: center;
   gap: 18px;
   padding: 18px 24px;
-  background: #fff3e4;
-  border-bottom: 1px solid rgba(165, 112, 0, 0.12);
-  color: rgba(128, 87, 0, 0.78);
+  background: rgba(241, 245, 249, 0.9);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  color: rgba(71, 85, 105, 0.92);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -4322,7 +4328,7 @@ main {
   align-items: center;
   gap: 18px;
   padding: 20px 24px;
-  border-bottom: 1px solid rgba(165, 112, 0, 0.08);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .market-row {
@@ -4335,7 +4341,7 @@ main {
 }
 
 .workflow-row[data-active="true"] {
-  background: rgba(255, 230, 198, 0.42);
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.46), rgba(204, 251, 241, 0.26));
 }
 
 .workflow-row-publishing {
@@ -4350,7 +4356,7 @@ main {
 .market-row-title,
 .workflow-cell-primary strong {
   font-size: 1rem;
-  color: #2b2d38;
+  color: #0f172a;
   font-weight: 700;
 }
 
@@ -4364,7 +4370,7 @@ main {
 .draft-check-copy,
 .draft-revision-copy {
   margin: 0;
-  color: rgba(70, 46, 0, 0.7);
+  color: rgba(71, 85, 105, 0.92);
   line-height: 1.65;
 }
 
@@ -4396,9 +4402,9 @@ main {
 .publishing-failure-card {
   padding: 26px;
   border-radius: 28px;
-  background: #fffdf9;
-  border: 1px solid rgba(165, 112, 0, 0.12);
-  box-shadow: 0 18px 44px rgba(70, 46, 0, 0.07);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.07);
 }
 
 .market-evidence-panel {
@@ -4418,8 +4424,8 @@ main {
 .workflow-review-card h2 {
   margin: 0;
   font-size: 1.5rem;
-  font-family: var(--font-headline);
-  color: #2b2d38;
+  font-family: "Lexend", "Inter", sans-serif;
+  color: #0f172a;
 }
 
 .market-evidence-kicker,
@@ -4430,12 +4436,12 @@ main {
   font-size: 0.68rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(128, 87, 0, 0.82);
+  color: rgba(37, 99, 235, 0.9);
   font-weight: 800;
 }
 
 .studio-brand-label-danger {
-  color: #9e422c;
+  color: #dc2626;
 }
 
 .competitor-grid {
@@ -4448,9 +4454,9 @@ main {
 .competitor-side-card {
   padding: 24px;
   border-radius: 28px;
-  background: #fffdf9;
-  border: 1px solid rgba(165, 112, 0, 0.12);
-  box-shadow: 0 18px 44px rgba(70, 46, 0, 0.07);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.07);
 }
 
 .competitor-feature-metrics,
@@ -4465,7 +4471,7 @@ main {
 .workflow-review-meta-grid article {
   padding: 16px;
   border-radius: 18px;
-  background: #fff3e4;
+  background: rgba(241, 245, 249, 0.94);
   display: grid;
   gap: 6px;
 }
@@ -4475,13 +4481,13 @@ main {
   font-size: 0.67rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(128, 87, 0, 0.7);
+  color: rgba(37, 99, 235, 0.88);
   font-weight: 800;
 }
 
 .competitor-feature-metrics strong,
 .workflow-review-meta-grid strong {
-  color: #2b2d38;
+  color: #0f172a;
 }
 
 .competitor-side-stack {
@@ -4503,7 +4509,7 @@ main {
 }
 
 .studio-context-card-warm {
-  background: #fff3e4;
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.4), rgba(204, 251, 241, 0.28));
 }
 
 .studio-context-stack,
@@ -4522,13 +4528,14 @@ main {
   gap: 16px;
   padding: 16px;
   border-radius: 22px;
-  background: #fff4e7;
+  background: rgba(241, 245, 249, 0.94);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .studio-context-product-image {
   min-height: 120px;
   border-radius: 18px;
-  background: linear-gradient(160deg, rgba(255, 221, 175, 0.8), rgba(245, 242, 248, 0.95));
+  background: linear-gradient(160deg, rgba(191, 219, 254, 0.8), rgba(204, 251, 241, 0.95));
 }
 
 .studio-context-product-copy,
@@ -4549,7 +4556,7 @@ main {
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(128, 87, 0, 0.72);
+  color: rgba(37, 99, 235, 0.88);
   font-weight: 800;
 }
 
@@ -4558,7 +4565,7 @@ main {
 .studio-opportunity-item h3,
 .draft-score-copy strong {
   margin: 0;
-  color: #2b2d38;
+  color: #0f172a;
 }
 
 .studio-canvas,
@@ -4593,13 +4600,13 @@ main {
   font-size: 0.71rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(70, 46, 0, 0.56);
+  color: rgba(100, 116, 139, 0.9);
   font-weight: 700;
 }
 
 .studio-tab-active {
-  color: #2b2d38;
-  border-bottom: 2px solid #805700;
+  color: #0f172a;
+  border-bottom: 2px solid #2563eb;
 }
 
 .studio-generate-button,
@@ -4612,8 +4619,8 @@ main {
 .studio-generate-button {
   padding: 12px 18px;
   border-radius: 12px;
-  background: #4b6500;
-  color: #f8fff0;
+  background: linear-gradient(135deg, #2563eb, #14b8a6);
+  color: #eff6ff;
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -4626,21 +4633,22 @@ main {
   gap: 16px;
   padding: 18px;
   border-radius: 22px;
-  background: #fff3e4;
+  background: rgba(241, 245, 249, 0.94);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .studio-brand-reminder h3,
 .studio-generated-hook,
 .draft-header h1 {
   margin: 0;
-  color: #2b2d38;
+  color: #0f172a;
 }
 
 .studio-generated-card {
   padding: 26px;
   border-radius: 26px;
-  background: #fff;
-  border: 1px solid rgba(165, 112, 0, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 .studio-generated-meta {
@@ -4659,8 +4667,8 @@ main {
   justify-content: center;
   padding: 5px 10px;
   border-radius: 999px;
-  background: #e6f7d8;
-  color: #2c5d00;
+  background: rgba(219, 234, 254, 0.8);
+  color: #1d4ed8;
   font-size: 0.65rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -4669,20 +4677,21 @@ main {
 
 .draft-id-pill,
 .workflow-badge {
-  background: #fff3e4;
-  color: rgba(128, 87, 0, 0.82);
+  background: rgba(241, 245, 249, 0.94);
+  color: rgba(37, 99, 235, 0.9);
 }
 
 .studio-generated-note,
 .studio-confidence {
   font-size: 0.72rem;
-  color: rgba(70, 46, 0, 0.54);
+  color: rgba(100, 116, 139, 0.9);
 }
 
 .studio-generated-hook {
-  font-family: var(--font-headline);
+  font-family: "Lexend", "Inter", sans-serif;
   font-size: clamp(1.8rem, 2.9vw, 3rem);
-  line-height: 1.02;
+  line-height: 1.06;
+  font-weight: 700;
 }
 
 .studio-inline-link,
