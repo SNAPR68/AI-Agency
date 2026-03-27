@@ -1,5 +1,4 @@
-import { EditorialListPanel } from "../../../../components/data-presentation";
-import { WorkspacePage } from "../../../../components/workspace-page";
+import Link from "next/link";
 import { getReportsDashboardDataAsync } from "../../../../lib/reports-data";
 
 type ReportsPageProps = {
@@ -11,98 +10,125 @@ type ReportsPageProps = {
 export default async function ReportsPage({ params }: ReportsPageProps) {
   const { brandId } = await params;
   const reports = await getReportsDashboardDataAsync(brandId);
+  const founderCard = reports.summaryCards[0];
+  const supportingCards = reports.summaryCards.slice(1);
 
   return (
-    <WorkspacePage
-      model={{
-        kicker: "Reports",
-        title: "Founder and team reporting layer",
-        description: reports.headline,
-        actions: [
-          {
-            label: "Export Founder Report",
-            href: `/api/brands/${brandId}/reports/founder/export`
-          },
-          {
-            label: "Export Team Report",
-            href: `/api/brands/${brandId}/reports/team/export`,
-            tone: "secondary"
-          }
-        ],
-        stats: reports.stats
-      }}
-    >
-      <section className="editorial-layout">
-        <div className="editorial-main">
-          <section className="editorial-report-grid">
-            {reports.summaryCards.map((card, index) => (
-              <EditorialListPanel
-                key={card.id}
-                label={card.audience}
-                title={card.title}
-                description={card.description}
-                items={card.keyPoints.map((point, pointIndex) => ({
-                  eyebrow: `Point ${pointIndex + 1}`,
-                  title: point,
-                  description:
-                    "This line is being pulled from the live operating system rather than a separate presentation workflow.",
-                  tags: [{ label: "Live workspace data", tone: "positive" }]
-                }))}
-                tone={index === 0 ? "warm" : "default"}
-              />
-            ))}
-          </section>
+    <div className="report-suite">
+      <header className="command-header">
+        <div className="command-header-copy">
+          <h1 className="command-title">The Reporting Suite</h1>
+          <p className="command-description">{reports.headline}</p>
         </div>
 
-        <aside className="editorial-rail">
-          <section className="editorial-section" data-tone="ink">
-            <p className="editorial-section-label">Reporting Layer</p>
-            <h2 className="editorial-section-title">Coverage and freshness</h2>
-            <p className="editorial-section-description">
-              Reports should compress the live system, not create a second source of truth.
-            </p>
+        <div className="report-suite-actions">
+          <div className="report-freshness-pill">
+            <span className="report-freshness-dot" />
+            <span>Data freshness: {reports.generatedAtLabel}</span>
+          </div>
+          <div className="command-actions">
+            <Link
+              className="command-primary-button"
+              href={`/api/brands/${brandId}/reports/founder/export`}
+            >
+              Export Founder Report
+            </Link>
+            <Link
+              className="command-secondary-button"
+              href={`/api/brands/${brandId}/reports/team/export`}
+            >
+              Export Team Report
+            </Link>
+            <button className="command-secondary-button" type="button">
+              Schedule Report
+            </button>
+          </div>
+        </div>
+      </header>
 
-            <div className="editorial-timeline">
-              {reports.stats.map((stat) => (
-                <article key={stat.label} className="editorial-timeline-item">
-                  <p className="editorial-timeline-label">{stat.label}</p>
-                  <h3 className="editorial-timeline-title">{stat.value}</h3>
-                  <p className="editorial-timeline-copy">{stat.note}</p>
-                </article>
-              ))}
+      <section className="report-suite-grid">
+        <article className="report-hero-card">
+          <p className="command-mini-kicker">{founderCard?.audience ?? "Executive Narrative"}</p>
+          <h2 className="report-hero-title">
+            {founderCard?.title ?? "Founder's Growth Brief"}
+          </h2>
+          <p className="report-hero-copy">{founderCard?.description ?? reports.headline}</p>
+
+          <div className="report-hero-meta">
+            <div>
+              <span className="report-meta-label">Last run</span>
+              <span className="report-meta-value">{reports.generatedAtLabel}</span>
             </div>
-          </section>
+            <div>
+              <span className="report-meta-label">Status</span>
+              <span className="report-meta-value report-meta-value-positive">Ready</span>
+            </div>
+          </div>
 
-          <EditorialListPanel
-            label="Usage"
-            title="How to use the reports layer"
-            description="These exports should stay tightly linked to the live app."
-            items={[
-              {
-                eyebrow: "Leadership",
-                title: "Founder report for fast weekly clarity",
-                description:
-                  "Use the founder export when leadership needs a concise answer to what changed, what matters, and where attention is needed.",
-                tags: [{ label: "Leadership", tone: "positive" }]
-              },
-              {
-                eyebrow: "Operators",
-                title: "Team report for queue-level execution",
-                description:
-                  "Use the operating report when growth, content, and ops need one shared picture of what is blocked, scheduled, or still undecided.",
-                tags: [{ label: "Operators", tone: "info" }]
-              },
-              {
-                eyebrow: "Single source of truth",
-                title: "Keep the exports tied to the live system",
-                description:
-                  "The point is to summarize the app, not recreate it in a parallel reporting workflow.",
-                tags: [{ label: "Single source of truth", tone: "warning" }]
-              }
-            ]}
-          />
-        </aside>
+          <div className="report-point-list">
+            {(founderCard?.keyPoints ?? []).map((point) => (
+              <article key={point} className="report-point-item">
+                <h3>{point}</h3>
+              </article>
+            ))}
+          </div>
+        </article>
+
+        <div className="report-side-stack">
+          {supportingCards.map((card) => (
+            <article key={card.id} className="report-side-card">
+              <p className="command-mini-kicker">{card.audience}</p>
+              <h3>{card.title}</h3>
+              <p>{card.description}</p>
+              <Link className="command-inline-link" href={card.href}>
+                Share Report
+              </Link>
+            </article>
+          ))}
+        </div>
       </section>
-    </WorkspacePage>
+
+      <section className="report-detail-grid">
+        <article className="report-format-card">
+          <h2 className="report-block-title">Format Options</h2>
+          <div className="report-format-list">
+            <label className="report-format-option" data-active="true">
+              <div>
+                <strong>Editorial PDF</strong>
+                <p>Founder-ready narrative export</p>
+              </div>
+              <input defaultChecked name="format" type="radio" />
+            </label>
+            <label className="report-format-option">
+              <div>
+                <strong>Data CSV</strong>
+                <p>Operational tables and supporting rows</p>
+              </div>
+              <input name="format" type="radio" />
+            </label>
+            <label className="report-format-option">
+              <div>
+                <strong>Team Snapshot</strong>
+                <p>Condensed execution view for operators</p>
+              </div>
+              <input name="format" type="radio" />
+            </label>
+          </div>
+        </article>
+
+        <article className="report-coverage-card">
+          <h2 className="report-block-title">Reporting Coverage</h2>
+          <div className="report-coverage-list">
+            {reports.stats.map((stat) => (
+              <article key={stat.label} className="report-coverage-item">
+                <p className="command-mini-kicker">{stat.label}</p>
+                <h3>{stat.value}</h3>
+                <p>{stat.note}</p>
+              </article>
+            ))}
+          </div>
+        </article>
+      </section>
+    </div>
   );
 }

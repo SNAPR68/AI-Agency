@@ -1,8 +1,4 @@
-import {
-  EditorialListPanel,
-  type PresentationTone
-} from "../../../../components/data-presentation";
-import { WorkspacePage } from "../../../../components/workspace-page";
+import Link from "next/link";
 import { listWorkspaceAlertsAsync } from "../../../../lib/operating-data";
 
 type AlertsPageProps = {
@@ -11,7 +7,19 @@ type AlertsPageProps = {
   }>;
 };
 
-function severityTone(severity: string): PresentationTone {
+function severityLabel(severity: string) {
+  if (severity === "high") {
+    return "Critical";
+  }
+
+  if (severity === "medium") {
+    return "Warning";
+  }
+
+  return "Notice";
+}
+
+function severityTone(severity: string) {
   if (severity === "high") {
     return "danger";
   }
@@ -23,110 +31,127 @@ function severityTone(severity: string): PresentationTone {
   return "info";
 }
 
+function statusTone(status: string) {
+  if (status === "open") {
+    return "warning";
+  }
+
+  if (status === "investigating") {
+    return "info";
+  }
+
+  return "positive";
+}
+
+function statusLabel(status: string) {
+  return status.replaceAll("_", " ");
+}
+
 export default async function AlertsPage({ params }: AlertsPageProps) {
   const { brandId } = await params;
   const alerts = await listWorkspaceAlertsAsync(brandId);
-  const openAlerts = alerts.filter((alert) => alert.status === "open").length;
-  const highSeverity = alerts.filter((alert) => alert.severity === "high").length;
 
   return (
-    <WorkspacePage
-      model={{
-        kicker: "Alerts",
-        title: "Operational issues that need a fast owner",
-        description:
-          "Alerts tie performance shifts and workflow blockers to evidence, impact, and the next step the team should take.",
-        actions: [
-          {
-            label: "View Opportunities",
-            href: `/brands/${brandId}/opportunities`
-          },
-          {
-            label: "Open Inbox",
-            href: `/brands/${brandId}/inbox`,
-            tone: "secondary"
-          }
-        ],
-        stats: [
-          {
-            label: "Total alerts",
-            value: `${alerts.length}`,
-            note: "Current alerts in the active workspace."
-          },
-          {
-            label: "Open now",
-            value: `${openAlerts}`,
-            note: "Issues still waiting for the first intervention."
-          },
-          {
-            label: "High severity",
-            value: `${highSeverity}`,
-            note: "Items with the highest immediate impact on revenue or trust."
-          }
-        ]
-      }}
-    >
-      <section className="editorial-layout">
-        <div className="editorial-main">
-          <EditorialListPanel
-            label="Alert Feed"
-            title="Operational issues that need a fast owner"
-            description="Each alert should explain what shifted, what it threatens, and where the operator should go next."
-            items={alerts.map((alert) => ({
-              eyebrow: `${alert.category} · ${alert.owner}`,
-              title: alert.title,
-              description: `${alert.evidence} ${alert.impact} Next: ${alert.nextStep}`,
-              value: alert.severity,
-              note: alert.status,
-              tags: [
-                { label: alert.severity, tone: severityTone(alert.severity) },
-                { label: alert.category, tone: "neutral" },
-                { label: alert.owner, tone: "info" }
-              ],
-              actions: [
-                {
-                  label: "Open source",
-                  href: alert.href,
-                  tone: "secondary"
-                }
-              ]
-            }))}
-            tone="warm"
-          />
+    <div className="command-page">
+      <section className="command-header">
+        <div className="command-header-copy">
+          <p className="command-kicker">Operational integrity</p>
+          <h1 className="command-title">Alerts</h1>
+          <p className="command-description">
+            Real-time monitoring of Shopify storefront anomalies, workflow drift,
+            and trust risks that need a fast owner.
+          </p>
         </div>
 
-        <aside className="editorial-rail">
-          <EditorialListPanel
-            label="Triage Rules"
-            title="How the team should use this queue"
-            description="The alerts page is for triage and routing, not passive dashboard watching."
-            items={[
-              {
-                eyebrow: "Assignment",
-                title: "Assign the first response quickly",
-                description:
-                  "Every high-impact alert should have a clear owner within the same operating day.",
-                tags: [{ label: "Assignment", tone: "info" }]
-              },
-              {
-                eyebrow: "Opportunity routing",
-                title: "Convert structural issues into opportunities",
-                description:
-                  "If the signal requires messaging, campaign, or merchandising work, route it into the opportunity engine.",
-                tags: [{ label: "Opportunity routing", tone: "positive" }]
-              },
-              {
-                eyebrow: "Trust risk",
-                title: "Escalate anything that affects trust",
-                description:
-                  "CX, delivery, or support patterns should move quickly into downstream ops, not stay trapped in analytics.",
-                tags: [{ label: "Trust risk", tone: "warning" }]
-              }
-            ]}
-            tone="ink"
-          />
-        </aside>
+        <div className="command-actions">
+          <Link className="command-secondary-button" href={`/brands/${brandId}/inbox`}>
+            Open Inbox
+          </Link>
+          <Link className="command-primary-button" href={`/brands/${brandId}/opportunities`}>
+            Create Opportunity
+          </Link>
+        </div>
       </section>
-    </WorkspacePage>
+
+      <section className="command-filter-bar">
+        <button className="command-filter-chip" data-active="true" type="button">
+          All
+        </button>
+        <button className="command-filter-chip" type="button">
+          High Severity
+        </button>
+        <button className="command-filter-chip" type="button">
+          Pending
+        </button>
+        <button className="command-filter-chip" type="button">
+          Resolved
+        </button>
+      </section>
+
+      <section className="alerts-table-shell">
+        <div className="alerts-table-head">
+          <span>Severity</span>
+          <span>Anomaly Description</span>
+          <span>Source Trace</span>
+          <span>Status</span>
+          <span className="alerts-table-head-actions">Actions</span>
+        </div>
+
+        <div className="alerts-table-body">
+          {alerts.map((alert) => (
+            <article key={alert.id} className="alerts-row">
+              <div className="alerts-cell">
+                <span className="status-chip" data-tone={severityTone(alert.severity)}>
+                  {severityLabel(alert.severity)}
+                </span>
+              </div>
+
+              <div className="alerts-cell alerts-description-cell">
+                <p className="alerts-row-title">{alert.title}</p>
+                <p className="alerts-row-copy">{alert.impact}</p>
+                <div className="record-meta">
+                  <span className="status-chip" data-tone="neutral">
+                    {alert.category}
+                  </span>
+                  <span className="status-chip" data-tone="info">
+                    {alert.owner}
+                  </span>
+                </div>
+              </div>
+
+              <div className="alerts-cell">
+                <div className="alerts-source">
+                  <span className="material-symbols-outlined">terminal</span>
+                  <code>{alert.evidence}</code>
+                </div>
+              </div>
+
+              <div className="alerts-cell">
+                <span className="status-chip" data-tone={statusTone(alert.status)}>
+                  {statusLabel(alert.status)}
+                </span>
+              </div>
+
+              <div className="alerts-cell alerts-actions-cell">
+                <div className="alerts-row-actions">
+                  <button className="command-inline-button" type="button">
+                    Dismiss Alert
+                  </button>
+                  <Link
+                    className="command-inline-button"
+                    href={`/brands/${brandId}/settings/users`}
+                  >
+                    Assign Owner
+                  </Link>
+                  <Link className="command-inline-link" href={alert.href}>
+                    View Source
+                  </Link>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }

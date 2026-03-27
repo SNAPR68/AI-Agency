@@ -1,8 +1,4 @@
-import {
-  EditorialListPanel,
-  type PresentationTone
-} from "../../../../components/data-presentation";
-import { WorkspacePage } from "../../../../components/workspace-page";
+import Link from "next/link";
 import { listWorkspaceInboxItemsAsync } from "../../../../lib/operating-data";
 
 type InboxPageProps = {
@@ -11,7 +7,7 @@ type InboxPageProps = {
   }>;
 };
 
-function kindTone(kind: string): PresentationTone {
+function kindTone(kind: string) {
   if (kind === "approval") {
     return "warning";
   }
@@ -27,6 +23,22 @@ function kindTone(kind: string): PresentationTone {
   return "neutral";
 }
 
+function itemIcon(kind: string) {
+  if (kind === "approval") {
+    return "verified_user";
+  }
+
+  if (kind === "alert") {
+    return "warning";
+  }
+
+  if (kind === "brief") {
+    return "article";
+  }
+
+  return "bolt";
+}
+
 export default async function InboxPage({ params }: InboxPageProps) {
   const { brandId } = await params;
   const items = await listWorkspaceInboxItemsAsync(brandId);
@@ -38,154 +50,144 @@ export default async function InboxPage({ params }: InboxPageProps) {
   );
 
   return (
-    <WorkspacePage
-      model={{
-        kicker: "Inbox",
-        title: "Everything that needs a response",
-        description:
-          "The inbox centralizes approvals, alerts, delivered briefs, and operational reminders so the team always knows what requires attention next.",
-        actions: [
-          {
-            label: "Open Approvals",
-            href: `/brands/${brandId}/approvals`
-          },
-          {
-            label: "Open Publishing",
-            href: `/brands/${brandId}/publishing`,
-            tone: "secondary"
-          }
-        ],
-        stats: [
-          {
-            label: "Inbox items",
-            value: `${items.length}`,
-            note: "Current items routed into the shared operating feed."
-          },
-          {
-            label: "Needs review",
-            value: `${items.filter((item) => item.state === "needs_review").length}`,
-            note: "Items still waiting for a human review or response."
-          },
-          {
-            label: "Open issues",
-            value: `${items.filter((item) => item.state === "open").length}`,
-            note: "Alerts or system issues still active in the queue."
-          }
-        ]
-      }}
-    >
-      <section className="editorial-layout">
-        <div className="editorial-main">
-          <EditorialListPanel
-            label="Today"
-            title="Priority action items"
-            description="This is where the team should start before creating more work elsewhere in the workspace."
-            items={priorityItems.map((item) => ({
-              eyebrow: `${item.kind} · ${item.receivedAtLabel}`,
-              title: item.title,
-              description: item.summary,
-              value: item.state,
-              note: "State",
-              tags: [
-                { label: item.kind, tone: kindTone(item.kind) },
-                { label: item.state, tone: "neutral" }
-              ],
-              actions: [
-                {
-                  label: item.actionLabel,
-                  href: item.href,
-                  tone: "secondary"
-                },
-                ...(item.state !== "resolved"
-                  ? [
-                      {
-                        label: "Mark as read",
-                        href: `/api/brands/${brandId}/inbox/${item.id}/read`,
-                        method: "post" as const,
-                        tone: "primary" as const,
-                        fields: [
-                          {
-                            name: "next",
-                            value: `/brands/${brandId}/inbox`
-                          }
-                        ]
-                      },
-                      {
-                        label: "Snooze",
-                        href: `/api/brands/${brandId}/inbox/${item.id}/snooze`,
-                        method: "post" as const,
-                        tone: "secondary" as const,
-                        fields: [
-                          {
-                            name: "next",
-                            value: `/brands/${brandId}/inbox`
-                          }
-                        ]
-                      }
-                    ]
-                  : [])
-              ]
-            }))}
-            tone="warm"
-          />
-
-          <EditorialListPanel
-            label="Earlier"
-            title="Scheduled and resolved workflow notes"
-            description="Keep the backlog visible without letting it overpower the current operating day."
-            items={laterItems.map((item) => ({
-              eyebrow: `${item.kind} · ${item.receivedAtLabel}`,
-              title: item.title,
-              description: item.summary,
-              value: item.state,
-              note: "State",
-              tags: [
-                { label: item.kind, tone: kindTone(item.kind) },
-                { label: item.state, tone: "neutral" }
-              ],
-              actions: [
-                {
-                  label: item.actionLabel,
-                  href: item.href,
-                  tone: "secondary"
-                }
-              ]
-            }))}
-          />
+    <div className="command-page">
+      <section className="command-header">
+        <div className="command-header-copy">
+          <p className="command-kicker">Inbox</p>
+          <h1 className="command-title">Your Action Items</h1>
+          <p className="command-description">
+            Manage pending approvals, system alerts, and campaign reminders across
+            the workspace without tab switching.
+          </p>
         </div>
 
-        <aside className="editorial-rail">
-          <EditorialListPanel
-            label="Usage"
-            title="How to use the inbox"
-            description="The inbox should reduce tab-switching and keep the week moving."
-            items={[
-              {
-                eyebrow: "Priority",
-                title: "Handle reviews before creating new work",
-                description:
-                  "Approvals and urgent alerts should be cleared before the team expands the queue.",
-                tags: [{ label: "Priority", tone: "warning" }]
-              },
-              {
-                eyebrow: "Shared visibility",
-                title: "Use it as the cross-functional starting point",
-                description:
-                  "Founders, operators, and marketers should all be able to see the same action queue.",
-                tags: [{ label: "Shared visibility", tone: "info" }]
-              },
-              {
-                eyebrow: "Workflow handoff",
-                title: "Route items into deeper workflows",
-                description:
-                  "The inbox is not the end destination. Each item should open the right screen for the next decision.",
-                tags: [{ label: "Workflow handoff", tone: "positive" }]
-              }
-            ]}
-            tone="ink"
-          />
-        </aside>
+        <div className="command-filter-bar command-filter-bar-tight">
+          <button className="command-filter-chip" data-active="true" type="button">
+            All
+          </button>
+          <button className="command-filter-chip" type="button">
+            Approvals
+          </button>
+          <button className="command-filter-chip" type="button">
+            Alerts
+          </button>
+          <button className="command-filter-chip" type="button">
+            System
+          </button>
+        </div>
       </section>
-    </WorkspacePage>
+
+      <section className="inbox-section">
+        <div className="inbox-section-head">
+          <h2 className="inbox-section-title">Today</h2>
+          <div className="inbox-divider" />
+          <span className="inbox-section-count">{priorityItems.length} new</span>
+        </div>
+
+        <div className="inbox-feed">
+          {priorityItems.map((item) => (
+            <article key={item.id} className="inbox-card" data-kind={item.kind}>
+              <div className="inbox-card-inner">
+                <div className="inbox-card-icon">
+                  <span className="material-symbols-outlined">{itemIcon(item.kind)}</span>
+                </div>
+
+                <div className="inbox-card-body">
+                  <div className="inbox-card-head">
+                    <h3 className="inbox-card-title">{item.title}</h3>
+                    <span className="inbox-card-time">{item.receivedAtLabel}</span>
+                  </div>
+
+                  <p className="inbox-card-copy">{item.summary}</p>
+
+                  <div className="inbox-preview">
+                    <div className="inbox-preview-icon">
+                      <span className="material-symbols-outlined">link</span>
+                    </div>
+                    <div className="inbox-preview-copy">
+                      <p className="inbox-preview-title">Linked workspace item</p>
+                      <p className="inbox-preview-note">This action opens the exact workflow that needs the next decision.</p>
+                    </div>
+                    <span className="status-chip" data-tone={kindTone(item.kind)}>
+                      {item.kind}
+                    </span>
+                  </div>
+
+                  <div className="inbox-card-actions">
+                    <Link className="command-primary-button" href={item.href}>
+                      {item.kind === "approval" ? "Approve from Inbox" : "Open Linked Item"}
+                    </Link>
+
+                    <form
+                      action={`/api/brands/${brandId}/inbox/${item.id}/read`}
+                      className="inline-form"
+                      method="post"
+                    >
+                      <input name="next" type="hidden" value={`/brands/${brandId}/inbox`} />
+                      <button className="command-secondary-button" type="submit">
+                        Mark as Read
+                      </button>
+                    </form>
+
+                    <form
+                      action={`/api/brands/${brandId}/inbox/${item.id}/snooze`}
+                      className="inline-form"
+                      method="post"
+                    >
+                      <input name="next" type="hidden" value={`/brands/${brandId}/inbox`} />
+                      <button className="command-icon-button" title="Snooze" type="submit">
+                        <span className="material-symbols-outlined">schedule</span>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="inbox-section">
+        <div className="inbox-section-head">
+          <h2 className="inbox-section-title">Earlier</h2>
+          <div className="inbox-divider" />
+          <span className="inbox-section-count">{laterItems.length} items</span>
+        </div>
+
+        <div className="inbox-feed">
+          {laterItems.map((item) => (
+            <article key={item.id} className="inbox-card inbox-card-compact" data-kind={item.kind}>
+              <div className="inbox-card-inner">
+                <div className="inbox-card-icon">
+                  <span className="material-symbols-outlined">{itemIcon(item.kind)}</span>
+                </div>
+
+                <div className="inbox-card-body">
+                  <div className="inbox-card-head">
+                    <h3 className="inbox-card-title">{item.title}</h3>
+                    <span className="inbox-card-time">{item.receivedAtLabel}</span>
+                  </div>
+                  <p className="inbox-card-copy">{item.summary}</p>
+                  <div className="record-meta">
+                    <span className="status-chip" data-tone={kindTone(item.kind)}>
+                      {item.kind}
+                    </span>
+                    <span className="status-chip" data-tone="neutral">
+                      {item.state.replaceAll("_", " ")}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="inbox-card-side">
+                  <Link className="command-inline-link" href={item.href}>
+                    Open Linked Item
+                  </Link>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
