@@ -1,9 +1,4 @@
 import {
-  EditorialListPanel,
-  type PresentationTone
-} from "../../../../components/data-presentation";
-import { WorkspacePage } from "../../../../components/workspace-page";
-import {
   formatDraftStatusLabel,
   listPublishJobsAsync,
   listReadyToPublishDraftsAsync
@@ -15,7 +10,7 @@ type PublishingPageProps = {
   }>;
 };
 
-function jobTone(status: string): PresentationTone {
+function publishTone(status: string) {
   if (status === "published") {
     return "positive";
   }
@@ -38,210 +33,212 @@ export default async function PublishingPage({ params }: PublishingPageProps) {
   const failureJob = jobs.find((job) => job.status === "failed");
 
   return (
-    <WorkspacePage
-      model={{
-        kicker: "Publishing",
-        title: "Scheduling, delivery, and retry queue",
-        description:
-          "This page turns approved work into a real publish plan and keeps failures visible instead of hidden.",
-        actions: [
-          {
-            label: "Open Approvals",
-            href: `/brands/${brandId}/approvals`
-          },
-          {
-            label: "Open Content Studio",
-            href: `/brands/${brandId}/content`,
-            tone: "secondary"
-          }
-        ],
-        stats: [
-          {
-            label: "Ready to publish",
-            value: `${readyDrafts.length}`,
-            note: "Approved drafts still waiting for a scheduling decision."
-          },
-          {
-            label: "Scheduled jobs",
-            value: `${jobs.filter((job) => job.status === "scheduled").length}`,
-            note: "Items currently queued for future delivery."
-          },
-          {
-            label: "Failed jobs",
-            value: `${jobs.filter((job) => job.status === "failed").length}`,
-            note: "Retries that need attention before the queue is trustworthy."
-          }
-        ]
-      }}
-    >
-      <section className="editorial-layout">
-        <div className="editorial-main">
-          <EditorialListPanel
-            label="Ready"
-            title="Approved drafts waiting for publish decisions"
-            description="These drafts have cleared review and can now be scheduled or published immediately."
-            items={readyDrafts.map((draft) => ({
-              eyebrow: draft.channel,
-              title: draft.title,
-              description: `${draft.hook} ${draft.caption}`,
-              value: formatDraftStatusLabel(draft.status),
-              note: "Ready",
-              tags: [
-                { label: formatDraftStatusLabel(draft.status), tone: "positive" },
-                { label: draft.channel, tone: "info" }
-              ],
-              actions: [
-                {
-                  label: "Open draft",
-                  href: draft.href,
-                  tone: "secondary"
-                },
-                {
-                  label: "Schedule post",
-                  href: `/api/brands/${brandId}/publishing/${draft.id}/schedule`,
-                  method: "post",
-                  tone: "secondary",
-                  fields: [
-                    {
-                      name: "next",
-                      value: `/brands/${brandId}/publishing`
-                    }
-                  ]
-                },
-                {
-                  label: "Publish now",
-                  href: `/api/brands/${brandId}/publishing/${draft.id}/publish-now`,
-                  method: "post",
-                  tone: "primary",
-                  fields: [
-                    {
-                      name: "next",
-                      value: `/brands/${brandId}/publishing`
-                    }
-                  ]
-                }
-              ]
-            }))}
-            tone="warm"
-            emptyMessage="No approved drafts are waiting to be published right now."
-          />
-
-          <EditorialListPanel
-            label="Jobs"
-            title="Publish job queue"
-            description="Track scheduled delivery, successful publishes, and failures that need a retry."
-            items={jobs.map((job) => ({
-              eyebrow: job.channel,
-              title: job.draftTitle,
-              description:
-                job.status === "published"
-                  ? `Published ${job.publishedAtLabel}. Last updated ${job.updatedAtLabel}.`
-                  : job.status === "failed"
-                    ? `${job.failureReason ?? "Publish failed."} Last updated ${job.updatedAtLabel}.`
-                    : `Scheduled for ${job.scheduledForLabel}. Last updated ${job.updatedAtLabel}.`,
-              value: job.status,
-              note: job.scheduledForLabel,
-              tags: [
-                { label: job.status, tone: jobTone(job.status) },
-                { label: job.channel, tone: "info" }
-              ],
-              actions: [
-                {
-                  label: "Open draft",
-                  href: job.draftHref,
-                  tone: "secondary"
-                },
-                ...(job.status === "failed"
-                  ? [
-                      {
-                        label: "Retry failed job",
-                        href: `/api/brands/${brandId}/publishing/jobs/${job.id}/retry`,
-                        method: "post" as const,
-                        tone: "primary" as const,
-                        fields: [
-                          {
-                            name: "next",
-                            value: `/brands/${brandId}/publishing`
-                          }
-                        ]
-                      }
-                    ]
-                  : []),
-                ...(job.status === "scheduled"
-                  ? [
-                      {
-                        label: "Cancel schedule",
-                        href: `/api/brands/${brandId}/publishing/jobs/${job.id}/cancel`,
-                        method: "post" as const,
-                        tone: "secondary" as const,
-                        fields: [
-                          {
-                            name: "next",
-                            value: `/brands/${brandId}/publishing`
-                          }
-                        ]
-                      }
-                    ]
-                  : [])
-              ]
-            }))}
-          />
+    <section className="workflow-suite">
+      <header className="command-header">
+        <div>
+          <p className="command-kicker">Publishing</p>
+          <h1>Publishing Ops</h1>
+          <p className="command-copy">
+            Scheduling, publish jobs, and live state tracking for omnichannel brand presence.
+          </p>
         </div>
 
-        <aside className="editorial-rail">
-          {failureJob ? (
-            <section className="editorial-section" data-tone="warm">
-              <p className="editorial-section-label">Critical failure</p>
-              <h2 className="editorial-section-title">{failureJob.draftTitle}</h2>
-              <p className="editorial-section-description">
-                {failureJob.failureReason ?? "This publish job failed and needs a retry decision."}
-              </p>
-              <div className="record-actions" style={{ marginTop: "18px" }}>
+        <div className="command-header-actions">
+          <button className="button-link-secondary" type="button">
+            Schedule View
+          </button>
+          <button className="button-link" type="button">
+            Live State
+          </button>
+        </div>
+      </header>
+
+      <div className="publishing-top-grid">
+        <article className="publishing-volume-card">
+          <div className="publishing-volume-head">
+            <h2>24-Hour Delivery Volume</h2>
+            <div className="publishing-volume-legend">
+              <span><i data-tone="positive" /> Success</span>
+              <span><i data-tone="warning" /> Pending</span>
+              <span><i data-tone="danger" /> Failed</span>
+            </div>
+          </div>
+          <div className="publishing-bars">
+            {jobs.slice(0, 8).map((job, index) => (
+              <div key={job.id} className="publishing-bar-column">
+                <span
+                  className="publishing-bar-track"
+                  style={{ height: `${44 + ((index + 1) % 5) * 18}px` }}
+                >
+                  <i className="publishing-bar-fill" data-tone={publishTone(job.status)} />
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="publishing-bar-labels">
+            <span>00:00</span>
+            <span>06:00</span>
+            <span>12:00</span>
+            <span>18:00</span>
+            <span>Current</span>
+          </div>
+        </article>
+
+        <article className="publishing-failure-card">
+          <div>
+            <p className="editorial-section-label">Critical Failure</p>
+            <h2>{failureJob?.draftTitle ?? "Queue stable"}</h2>
+            <p>
+              {failureJob?.failureReason ??
+                "No critical publish failures are blocking the queue right now."}
+            </p>
+          </div>
+
+          <div className="publishing-failure-actions">
+            {failureJob ? (
+              <>
                 <form
                   action={`/api/brands/${brandId}/publishing/jobs/${failureJob.id}/retry`}
                   className="inline-form"
                   method="post"
                 >
                   <input name="next" type="hidden" value={`/brands/${brandId}/publishing`} />
+                  <button className="workflow-action-button workflow-action-button-danger" type="submit">
+                    Retry Failed Job
+                  </button>
+                </form>
+                <form
+                  action={`/api/brands/${brandId}/publishing/jobs/${failureJob.id}/cancel`}
+                  className="inline-form"
+                  method="post"
+                >
+                  <input name="next" type="hidden" value={`/brands/${brandId}/publishing`} />
+                  <button className="workflow-action-button workflow-action-button-muted" type="submit">
+                    Cancel Schedule
+                  </button>
+                </form>
+              </>
+            ) : (
+              <button className="workflow-action-button workflow-action-button-approve" type="button">
+                Queue Healthy
+              </button>
+            )}
+          </div>
+        </article>
+      </div>
+
+      <section className="publishing-panel">
+        <div className="publishing-panel-head">
+          <div className="publishing-filter-row">
+            <span>Channel: All Platforms</span>
+            <span>Status: All States</span>
+          </div>
+          <div className="publishing-search-pill">Search assets...</div>
+        </div>
+
+        <div className="publishing-ready-grid">
+          {readyDrafts.map((draft) => (
+            <article key={draft.id} className="publishing-ready-item">
+              <div>
+                <p className="publishing-ready-title">{draft.title}</p>
+                <p className="publishing-ready-copy">
+                  {draft.channel} · {formatDraftStatusLabel(draft.status)}
+                </p>
+              </div>
+              <div className="record-actions">
+                <form
+                  action={`/api/brands/${brandId}/publishing/${draft.id}/schedule`}
+                  className="inline-form"
+                  method="post"
+                >
+                  <input name="next" type="hidden" value={`/brands/${brandId}/publishing`} />
+                  <button className="button-link-secondary" type="submit">
+                    Schedule Post
+                  </button>
+                </form>
+                <form
+                  action={`/api/brands/${brandId}/publishing/${draft.id}/publish-now`}
+                  className="inline-form"
+                  method="post"
+                >
+                  <input name="next" type="hidden" value={`/brands/${brandId}/publishing`} />
                   <button className="button-link" type="submit">
-                    Retry failed job
+                    Publish Now
                   </button>
                 </form>
               </div>
-            </section>
-          ) : null}
+            </article>
+          ))}
+        </div>
 
-          <EditorialListPanel
-            label="Ops"
-            title="Publishing discipline"
-            description="The queue should stay reliable enough that founders and operators trust what is about to go live."
-            items={[
-              {
-                eyebrow: "Planned delivery",
-                title: "Schedule when timing matters",
-                description:
-                  "Use scheduling when the content needs channel timing, team review windows, or launch coordination.",
-                tags: [{ label: "Planned delivery", tone: "warning" }]
-              },
-              {
-                eyebrow: "Trust",
-                title: "Publish now only when confidence is already high",
-                description:
-                  "Immediate publishing should be the exception, not the default, especially while we are still tightening the workflow.",
-                tags: [{ label: "Trust", tone: "positive" }]
-              },
-              {
-                eyebrow: "Reliability",
-                title: "Treat failures as operational debt",
-                description:
-                  "A failed job should be retried or cancelled quickly so the queue remains a truthful operating surface.",
-                tags: [{ label: "Reliability", tone: "danger" }]
-              }
-            ]}
-            tone="ink"
-          />
-        </aside>
+        <div className="workflow-table-shell publishing-table-shell">
+          <div className="workflow-table-head">
+            <span>Draft / Asset</span>
+            <span>Channel</span>
+            <span>Scheduled Time</span>
+            <span>Status</span>
+            <span>Actions</span>
+          </div>
+
+          <div className="workflow-table-body">
+            {jobs.map((job) => (
+              <article key={job.id} className="workflow-row workflow-row-publishing">
+                <div className="workflow-cell-primary">
+                  <strong>{job.draftTitle}</strong>
+                  <p>{job.updatedAtLabel}</p>
+                </div>
+                <div className="workflow-cell-tag">
+                  <span className="workflow-badge">{job.channel}</span>
+                </div>
+                <div className="workflow-cell-publish-time">
+                  <strong>{job.scheduledForLabel ?? job.publishedAtLabel ?? "Pending"}</strong>
+                  <p>{job.updatedAtLabel}</p>
+                </div>
+                <div className="workflow-cell-status">
+                  <span className="status-chip" data-tone={publishTone(job.status)}>
+                    {job.status}
+                  </span>
+                  {job.failureReason ? <small>{job.failureReason}</small> : null}
+                </div>
+                <div className="workflow-cell-actions">
+                  {job.status === "failed" ? (
+                    <form
+                      action={`/api/brands/${brandId}/publishing/jobs/${job.id}/retry`}
+                      className="inline-form"
+                      method="post"
+                    >
+                      <input name="next" type="hidden" value={`/brands/${brandId}/publishing`} />
+                      <button className="workflow-inline-action" type="submit">
+                        Retry Failed Job
+                      </button>
+                    </form>
+                  ) : null}
+                  {job.status === "scheduled" ? (
+                    <form
+                      action={`/api/brands/${brandId}/publishing/jobs/${job.id}/cancel`}
+                      className="inline-form"
+                      method="post"
+                    >
+                      <input name="next" type="hidden" value={`/brands/${brandId}/publishing`} />
+                      <button className="workflow-inline-action" type="submit">
+                        Cancel Schedule
+                      </button>
+                    </form>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="workflow-table-footer">
+            <span>Showing {jobs.length} jobs</span>
+            <div className="workflow-pagination">
+              <button type="button">Previous</button>
+              <button type="button">Next Page</button>
+            </div>
+          </div>
+        </div>
       </section>
-    </WorkspacePage>
+    </section>
   );
 }

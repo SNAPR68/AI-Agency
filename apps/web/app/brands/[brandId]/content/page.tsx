@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { type PresentationTone } from "../../../../components/data-presentation";
-import { WorkspacePage } from "../../../../components/workspace-page";
 import {
   getWorkflowNarrativeAsync,
   listBrandDraftsAsync,
@@ -16,13 +14,13 @@ type ContentPageProps = {
   }>;
 };
 
-function toneForDraft(status: string): PresentationTone {
-  if (status === "ready_for_approval") {
-    return "warning";
+function draftTone(status: string) {
+  if (status === "published" || status === "approved") {
+    return "positive";
   }
 
-  if (status === "approved" || status === "published") {
-    return "positive";
+  if (status === "ready_for_approval") {
+    return "warning";
   }
 
   if (status === "changes_requested" || status === "rejected") {
@@ -37,95 +35,97 @@ export default async function ContentPage({ params }: ContentPageProps) {
   const drafts = await listBrandDraftsAsync(brandId);
   const opportunities = await listBrandOpportunitiesAsync(brandId);
   const products = await listBrandProductsAsync(brandId);
-  const starterOpportunities = opportunities.slice(0, 3);
-  const starterProducts = products.slice(0, 2);
-  const savedTrends = (await listTrendSignalsAsync(brandId)).slice(0, 3);
+  const trends = await listTrendSignalsAsync(brandId);
+
+  const contextProducts = products.slice(0, 2);
+  const savedTrends = trends.filter((trend) => trend.state !== "acted").slice(0, 3);
+  const featuredDrafts = drafts.slice(0, 2);
+  const starterOpportunity = opportunities.find((opportunity) => !opportunity.linkedDraftId) ?? opportunities[0];
+  const sendableDraft =
+    drafts.find((draft) => draft.status !== "ready_for_approval" && draft.status !== "approved") ?? drafts[0];
 
   return (
-    <WorkspacePage
-      model={{
-        kicker: "Content Studio",
-        title: "Drafts, hooks, and creator-ready execution",
-        description: await getWorkflowNarrativeAsync(brandId),
-        actions: [
-          {
-            label: "Generate Hooks",
-            href: `/brands/${brandId}/content`
-          },
-          {
-            label: "Open Calendar",
-            href: `/brands/${brandId}/content/calendar`,
-            tone: "secondary"
-          }
-        ],
-        stats: [
-          {
-            label: "Drafts in flight",
-            value: `${drafts.length}`,
-            note: "Seeded and user-created drafts currently in the workspace."
-          },
-          {
-            label: "Ready for approval",
-            value: `${drafts.filter((draft) => draft.status === "ready_for_approval").length}`,
-            note: "Drafts prepared for the next review pass."
-          },
-          {
-            label: "Open starters",
-            value: `${starterOpportunities.filter((item) => !item.linkedDraftId).length}`,
-            note: "Top opportunities that can still be turned into fresh drafts."
-          }
-        ]
-      }}
-    >
-      <section className="studio-layout">
-        <aside className="studio-sidebar">
-          <section className="studio-card">
-            <p className="editorial-section-label">Linked products</p>
-            <h2 className="studio-card-title">Products driving the studio</h2>
-            <p className="studio-card-copy">
-              The best content starts from the product hierarchy, not a blank prompt.
-            </p>
+    <section className="studio-suite">
+      <header className="command-header">
+        <div>
+          <p className="command-kicker">Content Studio</p>
+          <h1>Generate hooks, captions, scripts, and creator-ready copy.</h1>
+          <p className="command-copy">{await getWorkflowNarrativeAsync(brandId)}</p>
+        </div>
 
-            <div className="studio-product-list">
-              {starterProducts.map((product) => (
-                <article key={product.id} className="studio-product-card">
-                  <p className="studio-product-card-title">{product.title}</p>
-                  <p className="studio-product-card-copy">{product.heroMessage}</p>
-                  <div className="record-meta">
-                    <span className="status-chip" data-tone={product.status === "rising" ? "positive" : "warning"}>
-                      {product.status}
-                    </span>
-                    <span className="status-chip" data-tone="neutral">
-                      {product.linkedDraftCount} drafts
-                    </span>
-                  </div>
-                  <div className="record-actions">
-                    <Link className="button-link-secondary" href={product.href}>
-                      View product
-                    </Link>
-                    <form
-                      action={`/api/brands/${brandId}/products/${product.id}/generate-draft`}
-                      className="inline-form"
-                      method="post"
-                    >
-                      <button className="button-link" type="submit">
-                        Generate draft
-                      </button>
-                    </form>
+        <div className="command-header-actions">
+          {starterOpportunity ? (
+            <form
+              action={`/api/brands/${brandId}/opportunities/${starterOpportunity.id}/generate-draft`}
+              className="inline-form"
+              method="post"
+            >
+              <button className="button-link" type="submit">
+                Generate Hooks
+              </button>
+            </form>
+          ) : (
+            <Link className="button-link" href={`/brands/${brandId}/content`}>
+              Generate Hooks
+            </Link>
+          )}
+          <button className="button-link-secondary" type="button">
+            Create Creator Brief
+          </button>
+        </div>
+      </header>
+
+      <div className="studio-shell">
+        <aside className="studio-context-rail">
+          <section className="studio-context-card">
+            <p className="editorial-section-label">Linked Products</p>
+            <h2>Products driving the active creative queue.</h2>
+            <div className="studio-context-stack">
+              {contextProducts.map((product) => (
+                <article key={product.id} className="studio-context-product">
+                  <div className="studio-context-product-image" />
+                  <div className="studio-context-product-copy">
+                    <p className="studio-context-product-label">SKU surface</p>
+                    <h3>{product.title}</h3>
+                    <p>{product.heroMessage}</p>
+                    <div className="record-meta">
+                      <span className="status-chip" data-tone={product.status === "rising" ? "positive" : "warning"}>
+                        {product.status}
+                      </span>
+                      <span className="status-chip" data-tone="neutral">
+                        {product.linkedDraftCount} drafts
+                      </span>
+                    </div>
+                    <div className="record-actions">
+                      <Link className="button-link-secondary" href={product.href}>
+                        View Product
+                      </Link>
+                      <form
+                        action={`/api/brands/${brandId}/products/${product.id}/generate-draft`}
+                        className="inline-form"
+                        method="post"
+                      >
+                        <button className="button-link" type="submit">
+                          Generate Script
+                        </button>
+                      </form>
+                    </div>
                   </div>
                 </article>
               ))}
             </div>
           </section>
 
-          <section className="studio-card" data-tone="warm">
-            <p className="editorial-section-label">Saved trends</p>
-            <h2 className="studio-card-title">Signals worth pulling into the brief</h2>
-            <div className="studio-trend-list">
+          <section className="studio-context-card studio-context-card-warm">
+            <p className="editorial-section-label">Saved Trends</p>
+            <h2>Signals worth pulling into the brief.</h2>
+            <div className="studio-signal-list">
               {savedTrends.map((trend) => (
-                <article key={trend.id} className="studio-product-card">
-                  <p className="studio-product-card-title">{trend.title}</p>
-                  <p className="studio-product-card-copy">{trend.responseAngle}</p>
+                <article key={trend.id} className="studio-signal-item">
+                  <div>
+                    <p className="studio-signal-title">{trend.title}</p>
+                    <p className="studio-signal-copy">{trend.responseAngle}</p>
+                  </div>
                   <div className="record-meta">
                     <span className="status-chip" data-tone="info">
                       {trend.fitScore} fit
@@ -140,108 +140,121 @@ export default async function ContentPage({ params }: ContentPageProps) {
           </section>
         </aside>
 
-        <div className="studio-main">
-          <section className="studio-card">
-            <div className="studio-card-head">
-              <div>
-                <p className="editorial-section-label">Studio modes</p>
-                <h2 className="studio-card-title">Generation workspace</h2>
-                <p className="studio-card-copy">
-                  Keep the copy tied to live brand context and business priorities.
-                </p>
-              </div>
+        <div className="studio-canvas">
+          <section className="studio-generation-card">
+            <div className="studio-tab-row">
+              <nav className="studio-tab-bar">
+                <span className="studio-tab studio-tab-active">Hooks</span>
+                <span className="studio-tab">Captions</span>
+                <span className="studio-tab">Video Scripts</span>
+                <span className="studio-tab">Creator Briefs</span>
+              </nav>
+              {starterOpportunity ? (
+                <form
+                  action={`/api/brands/${brandId}/opportunities/${starterOpportunity.id}/generate-draft`}
+                  className="inline-form"
+                  method="post"
+                >
+                  <button className="studio-generate-button" type="submit">
+                    Generate Hooks
+                  </button>
+                </form>
+              ) : null}
             </div>
 
-            <div className="studio-tab-bar">
-              <span className="studio-tab" data-active="true">Hooks</span>
-              <span className="studio-tab">Captions</span>
-              <span className="studio-tab">Video scripts</span>
-              <span className="studio-tab">Creator briefs</span>
-            </div>
-
-            <div className="studio-brand-grid">
-              <article className="studio-brand-rule">
-                <p className="studio-brand-rule-title">Brand voice</p>
-                <p className="studio-brand-rule-copy">Elevated, direct, product-first, and proof-led.</p>
+            <div className="studio-brand-reminder">
+              <article>
+                <p className="studio-brand-label">Brand Voice</p>
+                <h3>Elevated, direct, and product-first.</h3>
               </article>
-              <article className="studio-brand-rule">
-                <p className="studio-brand-rule-title">Avoid</p>
-                <p className="studio-brand-rule-copy">Generic hype, empty urgency, and angles not grounded in the product story.</p>
+              <article>
+                <p className="studio-brand-label studio-brand-label-danger">Avoid</p>
+                <h3>Generic hype, empty urgency, and soft proof.</h3>
               </article>
             </div>
 
-            <div className="studio-draft-stack">
-              {drafts.map((draft) => (
-                <article key={draft.id} className="studio-draft-card">
-                  <div className="studio-draft-meta">
+            <div className="studio-generated-stack">
+              {featuredDrafts.map((draft, index) => (
+                <article key={draft.id} className="studio-generated-card">
+                  <div className="studio-generated-head">
+                    <div className="studio-generated-meta">
+                      <span className="studio-concept-pill">Concept {String.fromCharCode(65 + index)}</span>
+                      <span className="studio-generated-note">{draft.angle}</span>
+                    </div>
                     <div className="record-meta">
-                      <span className="status-chip" data-tone="positive">
-                        {draft.productTitle ?? "Manual draft"}
-                      </span>
-                      <span
-                        className="status-chip"
-                        data-tone={toneForDraft(draft.status)}
-                      >
+                      <span className="status-chip" data-tone={draftTone(draft.status)}>
                         {formatDraftStatusLabel(draft.status)}
                       </span>
+                      <span className="status-chip" data-tone="neutral">
+                        {draft.channel}
+                      </span>
                     </div>
-                    <span className="status-chip" data-tone="neutral">
-                      {draft.channel}
-                    </span>
                   </div>
 
-                  <p className="studio-draft-quote">"{draft.hook}"</p>
-                  <p className="studio-card-copy">{draft.caption}</p>
+                  <blockquote className="studio-generated-hook">"{draft.hook}"</blockquote>
+                  <p className="studio-generated-copy">{draft.caption}</p>
 
-                  <div className="studio-draft-footer">
-                    <div className="record-meta">
-                      <span className="status-chip" data-tone="info">
-                        {draft.angle}
-                      </span>
-                      <span className="status-chip" data-tone="neutral">
-                        Updated {draft.updatedAtLabel}
-                      </span>
-                    </div>
-
-                    <div className="record-actions">
-                      <Link className="button-link-secondary" href={draft.href}>
+                  <div className="studio-generated-footer">
+                    <div className="studio-generated-actions">
+                      <Link className="studio-inline-link" href={draft.href}>
                         Open draft
                       </Link>
-                      {draft.status !== "ready_for_approval" ? (
-                        <form
-                          action={`/api/brands/${brandId}/content/drafts/${draft.id}/send-for-approval`}
-                          className="inline-form"
-                          method="post"
-                        >
-                          <input name="title" type="hidden" value={draft.title} />
-                          <input name="channel" type="hidden" value={draft.channel} />
-                          <input name="angle" type="hidden" value={draft.angle} />
-                          <input name="hook" type="hidden" value={draft.hook} />
-                          <input name="caption" type="hidden" value={draft.caption} />
-                          <input name="script" type="hidden" value={draft.script} />
-                          <input name="next" type="hidden" value={`/brands/${brandId}/content`} />
-                          <button className="button-link" type="submit">
-                            Send for approval
-                          </button>
-                        </form>
-                      ) : null}
+                      <button className="studio-inline-link" type="button">
+                        Variations
+                      </button>
                     </div>
+                    <span className="studio-confidence">Updated {draft.updatedAtLabel}</span>
                   </div>
                 </article>
               ))}
             </div>
+
+            <div className="studio-footer-actions">
+              {sendableDraft ? (
+                <Link className="button-link-secondary" href={sendableDraft.href}>
+                  Save Draft
+                </Link>
+              ) : (
+                <button className="button-link-secondary" type="button">
+                  Save Draft
+                </button>
+              )}
+              {sendableDraft ? (
+                <form
+                  action={`/api/brands/${brandId}/content/drafts/${sendableDraft.id}/send-for-approval`}
+                  className="inline-form"
+                  method="post"
+                >
+                  <input name="title" type="hidden" value={sendableDraft.title} />
+                  <input name="channel" type="hidden" value={sendableDraft.channel} />
+                  <input name="angle" type="hidden" value={sendableDraft.angle} />
+                  <input name="hook" type="hidden" value={sendableDraft.hook} />
+                  <input name="caption" type="hidden" value={sendableDraft.caption} />
+                  <input name="script" type="hidden" value={sendableDraft.script} />
+                  <input name="next" type="hidden" value={`/brands/${brandId}/content`} />
+                  <button className="button-link" type="submit">
+                    Send for Approval
+                  </button>
+                </form>
+              ) : null}
+            </div>
           </section>
 
-          <section className="studio-card" data-tone="warm">
-            <p className="editorial-section-label">Opportunity starters</p>
-            <h2 className="studio-card-title">Turn business signals into assets</h2>
-            <div className="studio-product-list">
-              {starterOpportunities.map((opportunity) => (
-                <article key={opportunity.id} className="studio-product-card">
-                  <p className="studio-product-card-title">{opportunity.title}</p>
-                  <p className="studio-product-card-copy">
-                    {opportunity.recommendation} Owner: {opportunity.owner}.
-                  </p>
+          <section className="studio-opportunity-card">
+            <div className="studio-opportunity-head">
+              <div>
+                <p className="editorial-section-label">Opportunity Starters</p>
+                <h2>Turn business signals directly into assets.</h2>
+              </div>
+            </div>
+
+            <div className="studio-opportunity-grid">
+              {opportunities.slice(0, 3).map((opportunity) => (
+                <article key={opportunity.id} className="studio-opportunity-item">
+                  <div>
+                    <p className="studio-opportunity-title">{opportunity.title}</p>
+                    <p className="studio-opportunity-copy">{opportunity.recommendation}</p>
+                  </div>
                   <div className="record-meta">
                     <span
                       className="status-chip"
@@ -255,8 +268,8 @@ export default async function ContentPage({ params }: ContentPageProps) {
                   </div>
                   <div className="record-actions">
                     {opportunity.linkedDraftHref ? (
-                      <Link className="button-link" href={opportunity.linkedDraftHref}>
-                        Open linked draft
+                      <Link className="button-link-secondary" href={opportunity.linkedDraftHref}>
+                        Open Draft
                       </Link>
                     ) : (
                       <form
@@ -265,7 +278,7 @@ export default async function ContentPage({ params }: ContentPageProps) {
                         method="post"
                       >
                         <button className="button-link" type="submit">
-                          Generate draft
+                          Generate Script
                         </button>
                       </form>
                     )}
@@ -275,7 +288,7 @@ export default async function ContentPage({ params }: ContentPageProps) {
             </div>
           </section>
         </div>
-      </section>
-    </WorkspacePage>
+      </div>
+    </section>
   );
 }

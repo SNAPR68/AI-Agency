@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { WorkspacePage } from "../../../../../../components/workspace-page";
 import { getBrandDraftAsync } from "../../../../../../lib/growth-workflow-data";
 import { formatDraftStatusLabel } from "../../../../../../lib/workflow-execution-data";
 
@@ -16,263 +15,204 @@ export default async function DraftDetailPage({ params }: DraftDetailPageProps) 
 
   if (!draft) {
     return (
-      <WorkspacePage
-        model={{
-          kicker: "Draft Detail",
-          title: "Draft not found",
-          description:
-            "This draft does not exist in the current workspace state yet.",
-          actions: [
-            {
-              label: "Back to Content Studio",
-              href: `/brands/${brandId}/content`
-            }
-          ]
-        }}
-      />
+      <section className="draft-suite">
+        <header className="command-header">
+          <div>
+            <p className="command-kicker">Draft Editor</p>
+            <h1>Draft not found.</h1>
+            <p className="command-copy">This draft is not available in the current workspace state.</p>
+          </div>
+          <div className="command-header-actions">
+            <Link className="button-link" href={`/brands/${brandId}/content`}>
+              Back to Content Studio
+            </Link>
+          </div>
+        </header>
+      </section>
     );
   }
 
   const readinessItems = [
     {
-      label: "Brand voice check",
-      detail: "Hook and caption still read like the brand rather than generic content filler.",
+      label: "Brand Voice Check",
+      detail: "Copy still sounds like the brand, not a generic performance ad.",
       done: draft.caption.length > 80
     },
     {
-      label: "Link accuracy",
-      detail: "The draft is tied back to a product or source opportunity in the workspace.",
+      label: "Link Accuracy",
+      detail: "The draft is tied back to a real product or source opportunity.",
       done: Boolean(draft.productTitle || draft.sourceOpportunityTitle)
     },
     {
-      label: "Approval readiness",
-      detail: "The current draft already contains enough structured copy to move into review.",
+      label: "Approval Readiness",
+      detail: "Enough structured copy exists to move this into review without guesswork.",
       done: draft.status === "ready_for_approval" || draft.status === "approved"
     }
   ];
+
   const readinessScore = Math.round(
     (readinessItems.filter((item) => item.done).length / readinessItems.length) * 100
   );
 
   return (
-    <WorkspacePage
-      model={{
-        kicker: "Draft Detail",
-        title: draft.title,
-        description:
-          "Edit the working copy, keep the business context intact, and push the draft into approval when it is ready.",
-        actions: [
-          {
-            label: "Back to Content Studio",
-            href: `/brands/${brandId}/content`
-          },
-          ...(draft.productHref
-            ? [
-                {
-                  label: "Open Product",
-                  href: draft.productHref,
-                  tone: "secondary" as const
-                }
-              ]
-            : [])
-        ],
-        stats: [
-          {
-            label: "Status",
-            value: formatDraftStatusLabel(draft.status),
-            note: `Last updated ${draft.updatedAtLabel}`
-          },
-          {
-            label: "Channel",
-            value: draft.channel,
-            note: `Angle: ${draft.angle}`
-          },
-          {
-            label: "Source",
-            value: draft.sourceOpportunityTitle ?? draft.productTitle ?? "Manual draft",
-            note: draft.productTitle
-              ? `Product: ${draft.productTitle}`
-              : "No product linked."
-          }
-        ]
-      }}
-    >
-      <section className="draft-editor-layout">
-        <div className="draft-editor-main">
-          <section className="draft-editor-card" data-tone="warm">
-            <p className="editorial-section-label">Context</p>
-            <h2 className="draft-editor-card-title">Business context</h2>
-            <p className="draft-editor-card-copy">
-              {draft.sourceOpportunityTitle
-                ? `This draft was created from the opportunity "${draft.sourceOpportunityTitle}".`
-                : "This draft was created directly from product momentum inside the workspace."}
-            </p>
-            {draft.productTitle ? (
-              <p className="draft-editor-card-copy">
-                It is currently linked to <strong>{draft.productTitle}</strong>.
-              </p>
-            ) : null}
-            <div className="record-actions" style={{ marginTop: "18px" }}>
-              <Link className="button-link-secondary" href={`/brands/${brandId}/content`}>
-                Back to queue
-              </Link>
-              <Link className="button-link-secondary" href={`/brands/${brandId}/approvals`}>
-                Open approvals
-              </Link>
-            </div>
-          </section>
+    <section className="draft-suite">
+      <header className="draft-header">
+        <div>
+          <div className="draft-header-meta">
+            <span className="draft-status-pill">{formatDraftStatusLabel(draft.status)}</span>
+            <span className="draft-id-pill">ID: {draft.id}</span>
+          </div>
+          <h1>{draft.title}</h1>
+        </div>
 
-          <section className="draft-editor-card">
-            <p className="editorial-section-label">Editor</p>
-            <h2 className="draft-editor-card-title">Draft editor</h2>
-            <p className="draft-editor-card-copy">
-              Keep the copy aligned with the product story and the specific opportunity that started this draft.
-            </p>
+        <div className="command-header-actions">
+          <button className="button-link-secondary" type="button">
+            Duplicate Draft
+          </button>
+          <button className="button-link-secondary" form="draft-editor-form" type="submit">
+            Save Draft
+          </button>
+          <button
+            className="button-link"
+            form="draft-editor-form"
+            formAction={`/api/brands/${brandId}/content/drafts/${draft.id}/send-for-approval`}
+            type="submit"
+          >
+            Send for Approval
+          </button>
+        </div>
+      </header>
 
-            <form
-              action={`/api/brands/${brandId}/content/drafts/${draft.id}/save`}
-              className="draft-editor-form-grid"
-              method="post"
-            >
-              <input name="next" type="hidden" value={`/brands/${brandId}/content/drafts/${draft.id}`} />
-              <input name="currentStatus" type="hidden" value={draft.status} />
+      <div className="draft-layout">
+        <div className="draft-editor-column">
+          <form
+            action={`/api/brands/${brandId}/content/drafts/${draft.id}/save`}
+            className="draft-editor-form"
+            id="draft-editor-form"
+            method="post"
+          >
+            <input name="next" type="hidden" value={`/brands/${brandId}/content/drafts/${draft.id}`} />
+            <input name="currentStatus" type="hidden" value={draft.status} />
 
-              <div className="form-grid">
+            <section className="draft-editor-block draft-editor-block-meta">
+              <div className="draft-editor-meta-grid">
                 <label className="field-stack">
                   <span className="field-label">Draft title</span>
-                  <input
-                    className="text-input"
-                    defaultValue={draft.title}
-                    name="title"
-                    type="text"
-                  />
+                  <input className="text-input" defaultValue={draft.title} name="title" type="text" />
                 </label>
 
                 <label className="field-stack">
                   <span className="field-label">Channel</span>
-                  <input
-                    className="text-input"
-                    defaultValue={draft.channel}
-                    name="channel"
-                    type="text"
-                  />
+                  <input className="text-input" defaultValue={draft.channel} name="channel" type="text" />
                 </label>
 
-                <label className="field-stack field-stack-wide">
+                <label className="field-stack draft-editor-meta-wide">
                   <span className="field-label">Angle</span>
-                  <input
-                    className="text-input"
-                    defaultValue={draft.angle}
-                    name="angle"
-                    type="text"
-                  />
+                  <input className="text-input" defaultValue={draft.angle} name="angle" type="text" />
                 </label>
               </div>
+            </section>
 
-              <section>
-                <h3 className="draft-section-title">Section A: Hook</h3>
-                <label className="field-stack">
-                  <span className="field-label">Hook</span>
-                  <textarea
-                    className="text-area text-area-compact"
-                    defaultValue={draft.hook}
-                    name="hook"
-                  />
-                </label>
-              </section>
-
-              <section>
-                <h3 className="draft-section-title">Section B: Caption</h3>
-                <label className="field-stack">
-                  <span className="field-label">Caption / creative brief</span>
-                  <textarea
-                    className="text-area"
-                    defaultValue={draft.caption}
-                    name="caption"
-                  />
-                </label>
-              </section>
-
-              <section>
-                <h3 className="draft-section-title">Section C: Script</h3>
-                <label className="field-stack">
-                  <span className="field-label">Script / execution notes</span>
-                  <textarea
-                    className="text-area text-area-tall"
-                    defaultValue={draft.script}
-                    name="script"
-                  />
-                </label>
-              </section>
-
-              <div className="record-actions">
-                <button className="button-link-secondary" type="submit">
-                  Save Draft
-                </button>
-                <button
-                  className="button-link"
-                  formAction={`/api/brands/${brandId}/content/drafts/${draft.id}/send-for-approval`}
-                  type="submit"
-                >
-                  Send for Approval
-                </button>
+            <section className="draft-editor-block">
+              <div className="draft-editor-section-head">
+                <h2>Section A: Hook</h2>
+                <span>Critical Attention Element</span>
               </div>
-            </form>
-          </section>
+              <textarea
+                className="draft-editor-textarea draft-editor-textarea-hook"
+                defaultValue={draft.hook}
+                name="hook"
+              />
+            </section>
+
+            <section className="draft-editor-block">
+              <div className="draft-editor-section-head">
+                <h2>Section B: Caption</h2>
+                <span>Engagement Optimized</span>
+              </div>
+              <textarea
+                className="draft-editor-textarea draft-editor-textarea-caption"
+                defaultValue={draft.caption}
+                name="caption"
+              />
+            </section>
+
+            <section className="draft-editor-block">
+              <div className="draft-editor-section-head">
+                <h2>Section C: Script</h2>
+                <span>Creative Brief</span>
+              </div>
+              <textarea
+                className="draft-editor-textarea draft-editor-textarea-script"
+                defaultValue={draft.script}
+                name="script"
+              />
+            </section>
+          </form>
         </div>
 
-        <aside className="draft-editor-rail">
-          <section className="draft-editor-card" data-tone="warm">
-            <p className="editorial-section-label">Approval readiness</p>
-            <h2 className="draft-editor-card-title">Readiness checklist</h2>
-            <div className="readiness-list">
+        <aside className="draft-side-column">
+          <section className="draft-side-card">
+            <p className="editorial-section-label">Approval Readiness</p>
+            <h3>Ready this asset before it hits the queue.</h3>
+            <div className="draft-checklist">
               {readinessItems.map((item) => (
-                <article key={item.label} className="readiness-item">
+                <article key={item.label} className="draft-check-item">
                   <div>
-                    <p className="readiness-title">{item.label}</p>
-                    <p className="readiness-copy">{item.detail}</p>
+                    <p className="draft-check-title">{item.label}</p>
+                    <p className="draft-check-copy">{item.detail}</p>
                   </div>
-                  <span className="readiness-check" data-done={item.done} />
+                  <span className="draft-check-mark" data-done={item.done}>
+                    {item.done ? "✓" : ""}
+                  </span>
                 </article>
               ))}
             </div>
 
-            <div className="readiness-score">
-              <p className="readiness-score-copy">
+            <div className="draft-score">
+              <div className="draft-score-copy">
                 <span>Overall score</span>
                 <strong>{readinessScore}%</strong>
-              </p>
-              <div className="readiness-bar">
-                <div
-                  className="readiness-bar-fill"
-                  style={{ width: `${readinessScore}%` }}
-                />
+              </div>
+              <div className="draft-score-bar">
+                <i style={{ width: `${readinessScore}%` }} />
               </div>
             </div>
           </section>
 
-          <section className="draft-editor-card">
-            <p className="editorial-section-label">Revision ledger</p>
-            <h2 className="draft-editor-card-title">Recent changes</h2>
-            <div className="revision-list">
-              <article className="revision-item">
-                <p className="revision-title">Workspace update</p>
-                <p className="revision-copy">Last touched {draft.updatedAtLabel} while shaping the current angle.</p>
-              </article>
-              <article className="revision-item">
-                <p className="revision-title">Source context</p>
-                <p className="revision-copy">
-                  {draft.sourceOpportunityTitle ?? draft.productTitle ?? "Manual draft created from the studio queue."}
+          <section className="draft-side-card">
+            <p className="editorial-section-label">Context</p>
+            <h3>Source and revision ledger.</h3>
+            <div className="draft-revision-list">
+              <article className="draft-revision-item">
+                <p className="draft-revision-title">Source</p>
+                <p className="draft-revision-copy">
+                  {draft.sourceOpportunityTitle ?? draft.productTitle ?? "Manual studio draft"}
                 </p>
               </article>
-              <article className="revision-item">
-                <p className="revision-title">Current status</p>
-                <p className="revision-copy">{formatDraftStatusLabel(draft.status)}</p>
+              <article className="draft-revision-item">
+                <p className="draft-revision-title">Linked product</p>
+                <p className="draft-revision-copy">{draft.productTitle ?? "No product linked yet."}</p>
               </article>
+              <article className="draft-revision-item">
+                <p className="draft-revision-title">Current state</p>
+                <p className="draft-revision-copy">
+                  {formatDraftStatusLabel(draft.status)} · Updated {draft.updatedAtLabel}
+                </p>
+              </article>
+            </div>
+
+            <div className="record-actions">
+              <Link className="button-link-secondary" href={`/brands/${brandId}/content`}>
+                Back to Studio
+              </Link>
+              <Link className="button-link-secondary" href={`/brands/${brandId}/approvals`}>
+                Open Approvals
+              </Link>
             </div>
           </section>
         </aside>
-      </section>
-    </WorkspacePage>
+      </div>
+    </section>
   );
 }
