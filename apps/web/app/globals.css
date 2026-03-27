@@ -5621,9 +5621,9 @@ main {
 .brief-suite-analysis,
 .brief-suite-action-card {
   border-radius: 28px;
-  background: #fffdf9;
-  border: 1px solid rgba(165, 112, 0, 0.12);
-  box-shadow: 0 18px 44px rgba(70, 46, 0, 0.07);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.07);
 }
 
 .brief-suite-summary {
@@ -5633,7 +5633,7 @@ main {
 .brief-suite-summary-copy {
   display: grid;
   gap: 20px;
-  font-family: var(--font-headline);
+  font-family: "Inter", sans-serif;
   font-size: 1.4rem;
 }
 
@@ -5659,21 +5659,22 @@ main {
   font-size: 0.68rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: rgba(128, 87, 0, 0.72);
+  color: rgba(37, 99, 235, 0.88);
   font-weight: 800;
 }
 
 .brief-suite-kpi strong,
 .report-v2-coverage-item strong {
-  font-family: var(--font-headline);
+  font-family: "Lexend", "Inter", sans-serif;
   font-size: 2.15rem;
+  font-weight: 700;
   line-height: 1;
-  color: #2b2d38;
+  color: #0f172a;
 }
 
 .brief-suite-kpi p {
   margin: 0;
-  color: rgba(70, 46, 0, 0.68);
+  color: rgba(71, 85, 105, 0.92);
 }
 
 .brief-suite-columns {
@@ -5696,18 +5697,18 @@ main {
 .brief-suite-column-head span {
   width: 32px;
   height: 1px;
-  background: #4b6500;
+  background: #2563eb;
 }
 
 .brief-suite-column-head[data-tone="danger"] span {
-  background: #9e422c;
+  background: #dc2626;
 }
 
 .brief-suite-column-head h2,
 .brief-suite-analysis-item h3 {
   margin: 0;
-  font-family: var(--font-headline);
-  color: #2b2d38;
+  font-family: "Lexend", "Inter", sans-serif;
+  color: #0f172a;
 }
 
 .brief-suite-list,
@@ -5726,7 +5727,7 @@ main {
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
   gap: 24px;
   padding: 30px;
-  background: #fff3e4;
+  background: rgba(241, 245, 249, 0.94);
 }
 
 .brief-suite-analysis-grid {
@@ -5767,7 +5768,7 @@ main {
 .report-suite-v2-header p {
   max-width: 760px;
   margin: 14px 0 0;
-  color: rgba(70, 46, 0, 0.7);
+  color: rgba(71, 85, 105, 0.92);
   font-size: 1.05rem;
   line-height: 1.7;
 }
@@ -5778,8 +5779,8 @@ main {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 999px;
-  background: #e4e2dd;
-  color: #51524e;
+  background: rgba(219, 234, 254, 0.8);
+  color: #1d4ed8;
   font-size: 0.68rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -5790,7 +5791,7 @@ main {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: #336b00;
+  background: #10b981;
 }
 
 .report-v2-hero-grid {
@@ -5802,9 +5803,9 @@ main {
 .report-v2-founder-card,
 .report-v2-side-card {
   border-radius: 28px;
-  background: #fffdf9;
-  border: 1px solid rgba(165, 112, 0, 0.12);
-  box-shadow: 0 18px 44px rgba(70, 46, 0, 0.07);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.07);
 }
 
 .report-v2-founder-card {
@@ -5848,12 +5849,12 @@ main {
   gap: 14px;
   padding: 16px;
   border-radius: 18px;
-  background: #fff3e4;
+  background: rgba(241, 245, 249, 0.94);
   border: 1px solid transparent;
 }
 
 .report-v2-format-option[data-active="true"] {
-  border-color: rgba(165, 112, 0, 0.24);
+  border-color: rgba(37, 99, 235, 0.24);
 }
 
 .report-v2-coverage-item {
@@ -5861,7 +5862,7 @@ main {
   gap: 8px;
   padding: 18px;
   border-radius: 18px;
-  background: #fff3e4;
+  background: rgba(241, 245, 249, 0.94);
 }
 
 .ops-intelligence-suite,
@@ -5888,14 +5889,14 @@ main {
   gap: 10px;
   padding: 28px;
   border-radius: 28px;
-  background: #fffdf9;
-  border: 1px solid rgba(165, 112, 0, 0.12);
-  box-shadow: 0 20px 48px rgba(70, 46, 0, 0.07);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.07);
 }
 
 .ops-intelligence-kpi[data-tone="warning"],
 .control-score-card {
-  background: #fff3e4;
+  background: rgba(241, 245, 249, 0.94);
 }
 
 .ops-intelligence-kpi span,
@@ -5903,7 +5904,7 @@ main {
 .control-score-card span,
 .control-tone-card span,
 .control-persona-card span {
-  color: rgba(128, 87, 0, 0.62);
+  color: rgba(37, 99, 235, 0.88);
   font-family: "Montserrat", sans-serif;
   font-size: 0.64rem;
   font-weight: 800;
@@ -5914,11 +5915,11 @@ main {
 .ops-intelligence-kpi strong,
 .control-stat-card strong,
 .control-score-card strong {
-  color: #2b2d38;
-  font-family: "Newsreader", Georgia, serif;
+  color: #0f172a;
+  font-family: "Lexend", "Inter", sans-serif;
   font-size: clamp(2.2rem, 3vw, 3.3rem);
-  font-weight: 500;
-  line-height: 0.95;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .ops-intelligence-kpi p,
@@ -5938,7 +5939,7 @@ main {
 .control-tone-card p,
 .control-member-primary p {
   margin: 0;
-  color: rgba(70, 46, 0, 0.7);
+  color: rgba(71, 85, 105, 0.92);
   line-height: 1.65;
 }
 
@@ -5971,9 +5972,9 @@ main {
   gap: 20px;
   padding: 28px;
   border-radius: 28px;
-  background: #fffdf9;
-  border: 1px solid rgba(165, 112, 0, 0.12);
-  box-shadow: 0 20px 48px rgba(70, 46, 0, 0.07);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.07);
 }
 
 .ops-intelligence-table-shell {
@@ -5994,7 +5995,7 @@ main {
 .control-note-stack article,
 .control-member-row,
 .control-member-row-muted {
-  background: #fff3e4;
+  background: rgba(241, 245, 249, 0.94);
 }
 
 .ops-intelligence-card h2,
@@ -6005,8 +6006,8 @@ main {
 .control-sync-item h3,
 .control-policy-card h3 {
   margin: 0;
-  color: #2b2d38;
-  font-family: var(--font-headline);
+  color: #0f172a;
+  font-family: "Lexend", "Inter", sans-serif;
 }
 
 .ops-intelligence-card h2,
@@ -6043,9 +6044,9 @@ main {
   display: grid;
   gap: 18px;
   padding: 18px 24px;
-  background: #fff3e4;
-  border-bottom: 1px solid rgba(165, 112, 0, 0.12);
-  color: rgba(128, 87, 0, 0.72);
+  background: rgba(241, 245, 249, 0.9);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  color: rgba(71, 85, 105, 0.92);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.15em;
@@ -6070,7 +6071,7 @@ main {
   gap: 18px;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid rgba(165, 112, 0, 0.08);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .ops-intelligence-row:last-child {
@@ -6078,7 +6079,7 @@ main {
 }
 
 .ops-intelligence-row[data-active="true"] {
-  background: rgba(255, 230, 198, 0.26);
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.42), rgba(204, 251, 241, 0.22));
 }
 
 .ops-intelligence-row-retention {
@@ -6097,7 +6098,7 @@ main {
 
 .ops-intelligence-cell-primary strong,
 .control-member-primary strong {
-  color: #2b2d38;
+  color: #0f172a;
   font-family: "Manrope", sans-serif;
   font-size: 1rem;
   font-weight: 700;
@@ -6113,15 +6114,15 @@ main {
 .control-note-stack strong,
 .control-product-card strong,
 .control-persona-card strong {
-  color: #2b2d38;
-  font-family: "Newsreader", Georgia, serif;
+  color: #0f172a;
+  font-family: "Lexend", "Inter", sans-serif;
   font-size: 1.18rem;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .ops-intelligence-cell-metric span,
 .ops-intelligence-block span {
-  color: rgba(128, 87, 0, 0.58);
+  color: rgba(37, 99, 235, 0.88);
   font-family: "Montserrat", sans-serif;
   font-size: 0.62rem;
   font-weight: 800;
@@ -6145,7 +6146,7 @@ main {
   gap: 8px;
   padding: 16px 18px;
   border-radius: 18px;
-  background: #fff3e4;
+  background: rgba(241, 245, 249, 0.94);
 }
 
 .ops-intelligence-notes,
@@ -6163,11 +6164,11 @@ main {
   gap: 8px;
   padding: 16px 18px;
   border-radius: 18px;
-  background: #fff3e4;
+  background: rgba(241, 245, 249, 0.94);
 }
 
 .ops-intelligence-notes strong {
-  color: #2b2d38;
+  color: #0f172a;
   font-family: "Manrope", sans-serif;
   font-size: 0.95rem;
 }
@@ -6211,20 +6212,21 @@ main {
   gap: 16px;
   padding: 16px 18px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .control-metric-list article span {
-  color: rgba(70, 46, 0, 0.62);
+  color: rgba(71, 85, 105, 0.92);
   font-size: 0.78rem;
   font-weight: 700;
 }
 
 .control-metric-list article strong {
-  color: #2b2d38;
-  font-family: "Newsreader", Georgia, serif;
+  color: #0f172a;
+  font-family: "Lexend", "Inter", sans-serif;
   font-size: 1.6rem;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .control-provider-grid,
@@ -6245,7 +6247,7 @@ main {
   gap: 14px;
   padding: 20px;
   border-radius: 22px;
-  border: 1px solid rgba(165, 112, 0, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .control-provider-head p:last-child {
