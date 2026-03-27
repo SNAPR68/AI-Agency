@@ -5,7 +5,11 @@ import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { getDefaultBrandPath } from "./navigation";
-import { getSupabaseConfigStatus } from "./supabase-env";
+import {
+  getSupabaseConfigStatus,
+  isHostedRuntime,
+  shouldEnforceSupabaseHostedAccess
+} from "./supabase-env";
 import {
   getSupabaseAccessibleBrandsForUser,
   getSupabaseDefaultBrandIdForUser,
@@ -31,6 +35,8 @@ export type SessionConfigStatus = {
   signedCookiesReady: boolean;
   secretSource: "session_secret" | "supabase_service_role" | "dev_default" | "missing";
   legacyLocalAuthFallbackEnabled: boolean;
+  hostedRuntime: boolean;
+  supabaseHostedAccessEnforced: boolean;
 };
 
 export type AppSession = {
@@ -137,6 +143,10 @@ function safeCompare(left: string, right: string) {
 }
 
 export function isLegacyLocalAuthFallbackEnabled() {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    return false;
+  }
+
   const raw = process.env.ALLOW_LEGACY_LOCAL_AUTH_FALLBACK?.trim().toLowerCase();
 
   if (raw === "true") {
@@ -152,11 +162,15 @@ export function isLegacyLocalAuthFallbackEnabled() {
 
 export function getSessionConfigStatus(): SessionConfigStatus {
   const secretSource = getSessionSecretSource();
+  const hostedRuntime = isHostedRuntime();
+  const supabaseHostedAccessEnforced = shouldEnforceSupabaseHostedAccess();
 
   return {
     signedCookiesReady: secretSource !== "missing",
     secretSource,
-    legacyLocalAuthFallbackEnabled: isLegacyLocalAuthFallbackEnabled()
+    legacyLocalAuthFallbackEnabled: isLegacyLocalAuthFallbackEnabled(),
+    hostedRuntime,
+    supabaseHostedAccessEnforced
   };
 }
 
@@ -271,6 +285,11 @@ export async function getAuthenticatedAppState(): Promise<AuthState | null> {
 
   const supabaseStatus = getSupabaseConfigStatus();
   const allowLegacyLocalFallback = isLegacyLocalAuthFallbackEnabled();
+  const supabaseHostedAccessEnforced = shouldEnforceSupabaseHostedAccess();
+
+  if (supabaseHostedAccessEnforced && !session.userEmail) {
+    return null;
+  }
 
   const supabaseLookupId = session.userEmail ?? session.userId;
   const supabaseUser =
@@ -304,6 +323,10 @@ export async function getAuthenticatedAppState(): Promise<AuthState | null> {
       return null;
     }
   } else if (session.userEmail && supabaseStatus.clientAuthReady && !allowLegacyLocalFallback) {
+    return null;
+  }
+
+  if (supabaseHostedAccessEnforced) {
     return null;
   }
 
@@ -350,11 +373,13 @@ export async function getAuthorizedBrandState(
   brandId: string
 ): Promise<AuthorizedBrandState | null> {
   const auth = await getAuthenticatedAppState();
+  const supabaseHostedAccessEnforced = shouldEnforceSupabaseHostedAccess();
 
   const hasSupabaseAccess = auth?.user.email
     ? await isSupabaseUserInBrand(auth.user.email, brandId)
     : false;
-  const hasLocalAccess = auth ? isUserInBrand(auth.user.id, brandId) : false;
+  const hasLocalAccess =
+    auth && !supabaseHostedAccessEnforced ? isUserInBrand(auth.user.id, brandId) : false;
 
   if (!auth || (!hasSupabaseAccess && !hasLocalAccess)) {
     return null;
@@ -363,6 +388,12 @@ export async function getAuthorizedBrandState(
   const supabaseWorkspace = auth.user.email
     ? await getSupabaseWorkspaceContext(brandId, auth.user.email)
     : null;
+  const localWorkspace =
+    !supabaseHostedAccessEnforced && auth ? getWorkspaceContext(brandId, auth.user.id) : null;
+
+  if (!supabaseWorkspace && !localWorkspace) {
+    return null;
+  }
 
   return {
     ...auth,
@@ -370,7 +401,7 @@ export async function getAuthorizedBrandState(
       ...auth.session,
       brandId
     },
-    workspace: supabaseWorkspace ?? getWorkspaceContext(brandId, auth.user.id)
+    workspace: supabaseWorkspace ?? localWorkspace!
   };
 }
 
@@ -379,11 +410,12 @@ export async function requireAuthorizedBrandState(
   nextPath?: string
 ) {
   const auth = await requireAuthenticatedAppState(nextPath);
+  const supabaseHostedAccessEnforced = shouldEnforceSupabaseHostedAccess();
 
   const hasSupabaseAccess = auth.user.email
     ? await isSupabaseUserInBrand(auth.user.email, brandId)
     : false;
-  const hasLocalAccess = isUserInBrand(auth.user.id, brandId);
+  const hasLocalAccess = !supabaseHostedAccessEnforced && isUserInBrand(auth.user.id, brandId);
 
   if (!hasSupabaseAccess && !hasLocalAccess) {
     redirect(getDefaultBrandPath(auth.defaultBrandId));
@@ -392,6 +424,13 @@ export async function requireAuthorizedBrandState(
   const supabaseWorkspace = auth.user.email
     ? await getSupabaseWorkspaceContext(brandId, auth.user.email)
     : null;
+  const localWorkspace = !supabaseHostedAccessEnforced
+    ? getWorkspaceContext(brandId, auth.user.id)
+    : null;
+
+  if (!supabaseWorkspace && !localWorkspace) {
+    redirect(getDefaultBrandPath(auth.defaultBrandId));
+  }
 
   return {
     ...auth,
@@ -399,6 +438,6 @@ export async function requireAuthorizedBrandState(
       ...auth.session,
       brandId
     },
-    workspace: supabaseWorkspace ?? getWorkspaceContext(brandId, auth.user.id)
+    workspace: supabaseWorkspace ?? localWorkspace!
   };
 }

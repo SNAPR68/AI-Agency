@@ -4,6 +4,8 @@ export type SupabaseConfigStatus = {
   projectUrl: string;
   projectRef: string | null;
   projectHost: string | null;
+  hostedRuntime: boolean;
+  hostedSupabaseAccessEnforced: boolean;
   urlConfigured: boolean;
   anonKeyConfigured: boolean;
   serviceRoleConfigured: boolean;
@@ -60,11 +62,18 @@ function getProjectMetadata(projectUrl: string) {
   }
 }
 
+export function isHostedRuntime() {
+  return Boolean(process.env.VERCEL || process.env.VERCEL_ENV || process.env.VERCEL_URL);
+}
+
 export function getSupabaseConfigStatus(): SupabaseConfigStatus {
   const projectUrl = getSupabaseProjectUrl();
   const anonKey = getSupabaseAnonKey();
   const serviceRoleKey = getSupabaseServiceRoleKey();
   const { projectRef, projectHost } = getProjectMetadata(projectUrl);
+  const hostedRuntime = isHostedRuntime();
+  const clientAuthReady = Boolean(projectUrl && anonKey);
+  const serverAdminReady = Boolean(projectUrl && serviceRoleKey);
   const missing: string[] = [];
 
   if (!projectUrl) {
@@ -83,11 +92,17 @@ export function getSupabaseConfigStatus(): SupabaseConfigStatus {
     projectUrl,
     projectRef,
     projectHost,
+    hostedRuntime,
+    hostedSupabaseAccessEnforced: hostedRuntime && clientAuthReady,
     urlConfigured: Boolean(projectUrl),
     anonKeyConfigured: Boolean(anonKey),
     serviceRoleConfigured: Boolean(serviceRoleKey),
-    clientAuthReady: Boolean(projectUrl && anonKey),
-    serverAdminReady: Boolean(projectUrl && serviceRoleKey),
+    clientAuthReady,
+    serverAdminReady,
     missing
   };
+}
+
+export function shouldEnforceSupabaseHostedAccess() {
+  return getSupabaseConfigStatus().hostedSupabaseAccessEnforced;
 }

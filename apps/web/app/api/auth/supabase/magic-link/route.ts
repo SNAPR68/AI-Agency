@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAuthClient } from "../../../../../lib/supabase-server";
+import { shouldEnforceSupabaseHostedAccess } from "../../../../../lib/supabase-env";
 import {
   findSupabasePendingWorkspaceInviteByEmail,
   getSupabaseWorkspaceUserByEmail
@@ -10,13 +11,16 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const nextPath = String(formData.get("next") ?? "").trim();
-  const workspaceUser =
-    (await getSupabaseWorkspaceUserByEmail(email)) ?? getUserByEmail(email);
+  const supabaseHostedAccessEnforced = shouldEnforceSupabaseHostedAccess();
+  const supabaseWorkspaceUser = await getSupabaseWorkspaceUserByEmail(email);
+  const workspaceUser = supabaseHostedAccessEnforced
+    ? supabaseWorkspaceUser
+    : supabaseWorkspaceUser ?? getUserByEmail(email);
 
   if (!workspaceUser) {
     const pendingInvite =
       (await findSupabasePendingWorkspaceInviteByEmail(email)) ??
-      findPendingWorkspaceInviteByEmail(email);
+      (supabaseHostedAccessEnforced ? null : findPendingWorkspaceInviteByEmail(email));
 
     return NextResponse.redirect(
       new URL(

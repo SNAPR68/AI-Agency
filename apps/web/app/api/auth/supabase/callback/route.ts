@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { getDefaultBrandPath } from "../../../../../lib/navigation";
+import { shouldEnforceSupabaseHostedAccess } from "../../../../../lib/supabase-env";
 import { createSupabaseAuthClient } from "../../../../../lib/supabase-server";
 import {
   getSupabaseDefaultBrandIdForUser,
@@ -25,6 +26,7 @@ export async function GET(request: NextRequest) {
   const tokenHash = request.nextUrl.searchParams.get("token_hash");
   const type = request.nextUrl.searchParams.get("type") ?? "email";
   const nextPath = request.nextUrl.searchParams.get("next");
+  const supabaseHostedAccessEnforced = shouldEnforceSupabaseHostedAccess();
 
   if (!tokenHash || !supportedOtpTypes.has(type as EmailOtpType)) {
     return NextResponse.redirect(
@@ -56,8 +58,8 @@ export async function GET(request: NextRequest) {
   }
 
   const supabaseWorkspaceUser = await getSupabaseWorkspaceUserByEmail(email);
-  const localWorkspaceUser = getUserByEmail(email);
-  const workspaceUser = localWorkspaceUser ?? supabaseWorkspaceUser;
+  const localWorkspaceUser = supabaseHostedAccessEnforced ? null : getUserByEmail(email);
+  const workspaceUser = supabaseWorkspaceUser ?? localWorkspaceUser;
 
   if (!workspaceUser) {
     return NextResponse.redirect(
@@ -69,7 +71,8 @@ export async function GET(request: NextRequest) {
   const defaultBrandId =
     (supabaseWorkspaceUser
       ? await getSupabaseDefaultBrandIdForUser(supabaseWorkspaceUser.email)
-      : null) ?? getDefaultBrandIdForUser(workspaceUser.id);
+      : null) ??
+    (supabaseHostedAccessEnforced ? null : getDefaultBrandIdForUser(workspaceUser.id));
 
   if (!defaultBrandId) {
     return NextResponse.redirect(

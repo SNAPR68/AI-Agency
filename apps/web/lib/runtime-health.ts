@@ -108,7 +108,9 @@ export function getRuntimeHealthStatus(): RuntimeHealthStatus {
       name: "Session",
       status: session.signedCookiesReady ? "healthy" : "setup_required",
       summary: session.signedCookiesReady
-        ? `Signed app sessions are enabled using ${session.secretSource.replaceAll("_", " ")}.`
+        ? session.supabaseHostedAccessEnforced
+          ? `Signed app sessions are enabled using ${session.secretSource.replaceAll("_", " ")} and hosted deployments are enforcing Supabase workspace access.`
+          : `Signed app sessions are enabled using ${session.secretSource.replaceAll("_", " ")}.`
         : "Signed app sessions are not fully configured."
     },
     {

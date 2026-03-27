@@ -1,10 +1,7 @@
 import { redirect } from "next/navigation";
 import { getDefaultBrandPath } from "../../../lib/navigation";
 import { getAppRepositoryStatus } from "../../../lib/app-repository";
-import {
-  getAuthenticatedAppState,
-  isLegacyLocalAuthFallbackEnabled
-} from "../../../lib/session";
+import { getAuthenticatedAppState, getSessionConfigStatus } from "../../../lib/session";
 import { getSupabaseConfigStatus } from "../../../lib/supabase-env";
 import { getLoginWorkspaceOptions } from "../../../lib/workspace-data";
 import { formatWorkspaceRole } from "../../../lib/workspace";
@@ -38,7 +35,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const loginOptions = getLoginWorkspaceOptions();
   const repositoryStatus = getAppRepositoryStatus();
   const supabaseStatus = getSupabaseConfigStatus();
-  const legacyLocalAuthFallbackEnabled = isLegacyLocalAuthFallbackEnabled();
+  const sessionStatus = getSessionConfigStatus();
+  const legacyLocalAuthFallbackEnabled = sessionStatus.legacyLocalAuthFallbackEnabled;
   const repositoryMessage =
     repositoryStatus.activeSource === "postgres"
       ? "Workspace access is running on the Postgres repository."
@@ -82,6 +80,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <div className="trust-item">
               <p className="trust-title">Repository status</p>
               <p className="trust-copy">{repositoryMessage}</p>
+            </div>
+            <div className="trust-item">
+              <p className="trust-title">Hosted access policy</p>
+              <p className="trust-copy">
+                {sessionStatus.supabaseHostedAccessEnforced
+                  ? "Hosted deployments are enforcing Supabase workspace access."
+                  : "Local quick access remains available for development while fallback stays enabled."}
+              </p>
             </div>
           </div>
         </article>
