@@ -6,6 +6,7 @@ import type {
 } from "./app-repository";
 import { createSupabaseAdminClient } from "./supabase-admin";
 import { getSupabaseBrandRecord } from "./supabase-platform-data";
+import { shouldEnforceSupabaseHostedAccess } from "./supabase-env";
 import {
   listDerivedCatalogProducts,
   listDerivedStoreMetrics
@@ -50,7 +51,9 @@ function extractFirstNumber(value: string) {
 export async function listSupabaseDerivedCatalogProducts(
   brandId: string
 ): Promise<RepositoryCatalogProduct[]> {
-  const fallbackItems = listDerivedCatalogProducts(brandId);
+  const fallbackItems = shouldEnforceSupabaseHostedAccess()
+    ? []
+    : listDerivedCatalogProducts(brandId);
   const brand = await getSupabaseBrandRecord(brandId);
 
   if (!brand) {
@@ -101,7 +104,9 @@ export async function listSupabaseDerivedCatalogProducts(
 export async function listSupabaseDerivedStoreMetrics(
   brandId: string
 ): Promise<RepositoryStoreMetric[]> {
-  const fallbackItems = listDerivedStoreMetrics(brandId);
+  const fallbackItems = shouldEnforceSupabaseHostedAccess()
+    ? []
+    : listDerivedStoreMetrics(brandId);
   const brand = await getSupabaseBrandRecord(brandId);
 
   if (!brand) {

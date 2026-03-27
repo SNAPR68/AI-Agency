@@ -3,7 +3,7 @@ import {
   type PresentationTone
 } from "../../../../components/data-presentation";
 import { WorkspacePage } from "../../../../components/workspace-page";
-import { listWorkspaceInboxItems } from "../../../../lib/operating-data";
+import { listWorkspaceInboxItemsAsync } from "../../../../lib/operating-data";
 
 type InboxPageProps = {
   params: Promise<{
@@ -29,7 +29,7 @@ function kindTone(kind: string): PresentationTone {
 
 export default async function InboxPage({ params }: InboxPageProps) {
   const { brandId } = await params;
-  const items = listWorkspaceInboxItems(brandId);
+  const items = await listWorkspaceInboxItemsAsync(brandId);
   const priorityItems = items.filter(
     (item) => item.state === "needs_review" || item.state === "open"
   );

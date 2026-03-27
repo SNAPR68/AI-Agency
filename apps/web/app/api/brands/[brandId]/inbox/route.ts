@@ -1,5 +1,5 @@
 import { createApiError, createApiResponse } from "../../../../../lib/api";
-import { listWorkspaceInboxItems } from "../../../../../lib/operating-data";
+import { listWorkspaceInboxItemsAsync } from "../../../../../lib/operating-data";
 import { getAuthorizedBrandState } from "../../../../../lib/session";
 
 type InboxRouteProps = {
@@ -17,6 +17,6 @@ export async function GET(_request: Request, { params }: InboxRouteProps) {
   }
 
   return createApiResponse({
-    items: listWorkspaceInboxItems(brandId)
+    items: await listWorkspaceInboxItemsAsync(brandId)
   });
 }

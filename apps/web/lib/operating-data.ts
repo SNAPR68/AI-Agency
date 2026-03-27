@@ -15,6 +15,7 @@ import {
   listSupabaseDerivedStoreMetrics
 } from "./supabase-commerce-read-data";
 import { listPlatformIntegrationViews } from "./supabase-platform-data";
+import { shouldEnforceSupabaseHostedAccess } from "./supabase-env";
 import { getWorkspaceContext, getWorkspaceContextAsync } from "./workspace-data";
 
 export type WorkspaceKpi = {
@@ -1116,6 +1117,88 @@ export function listWorkspaceInboxItems(brandId: string): WorkspaceInboxFeedItem
 
     return true;
   });
+  const workflowItems: WorkspaceInboxItem[] = [
+    ...approvals
+      .filter(
+        (draft) =>
+          draft.status === "ready_for_approval" || draft.status === "changes_requested"
+      )
+      .map((draft) => ({
+        id: `workflow-approval-${draft.id}`,
+        kind: "approval" as const,
+        title:
+          draft.status === "changes_requested"
+            ? `${draft.title} needs another pass`
+            : `${draft.title} is ready for approval`,
+        summary:
+          draft.status === "changes_requested"
+            ? "A reviewer sent this draft back for revision. Tighten the copy and resubmit when it is ready."
+            : "A draft is waiting for a review decision before it can move into publishing.",
+        state: "needs_review" as const,
+        receivedAt: draft.updatedAt,
+        actionLabel: "Open draft",
+        href: draft.href
+      })),
+    ...readyDrafts.map((draft) => ({
+      id: `workflow-ready-${draft.id}`,
+      kind: "system" as const,
+      title: `${draft.title} is approved and ready to schedule`,
+      summary:
+        "This draft has cleared approval and is waiting for a scheduling or publish-now decision.",
+      state: "open" as const,
+      receivedAt: draft.updatedAt,
+      actionLabel: "Open publishing",
+      href: buildBrandPath(brandId, "/publishing")
+    })),
+    ...publishJobs
+      .filter((job) => job.status === "failed" || job.status === "scheduled")
+      .map((job) => ({
+        id: `workflow-publish-${job.id}`,
+        kind: job.status === "failed" ? ("alert" as const) : ("system" as const),
+        title:
+          job.status === "failed"
+            ? `${job.draftTitle} failed to publish`
+            : `${job.draftTitle} is scheduled to go live`,
+        summary:
+          job.status === "failed"
+            ? job.failureReason ?? "A publish job failed and needs a retry decision."
+            : `Delivery is queued for ${job.scheduledForLabel}.`,
+        state: job.status === "failed" ? ("open" as const) : ("scheduled" as const),
+        receivedAt: job.updatedAt,
+        actionLabel: "Open publishing",
+        href: buildBrandPath(brandId, "/publishing")
+      }))
+  ];
+
+  return [...seedItems, ...workflowItems]
+    .map((item) => ({
+      ...item,
+      state: getInboxOverride(brandId, item.id)?.state ?? item.state,
+      receivedAtLabel: formatTimestampLabel(item.receivedAt)
+    }))
+    .sort((left, right) => right.receivedAt.localeCompare(left.receivedAt));
+}
+
+export async function listWorkspaceInboxItemsAsync(
+  brandId: string
+): Promise<WorkspaceInboxFeedItem[]> {
+  const approvals = listApprovalItems(brandId);
+  const publishJobs = listPublishJobs(brandId);
+  const readyDrafts = listReadyToPublishDrafts(brandId);
+  const allowSeedFallback = !shouldEnforceSupabaseHostedAccess();
+  const seedItems = allowSeedFallback
+    ? getBrandSeed(brandId).inbox.filter((item) => {
+        if (item.kind === "approval" && approvals.length > 0) {
+          return false;
+        }
+
+        if (item.href === buildBrandPath(brandId, "/publishing") && publishJobs.length > 0) {
+          return false;
+        }
+
+        return true;
+      })
+    : [];
   const workflowItems: WorkspaceInboxItem[] = [
     ...approvals
       .filter(

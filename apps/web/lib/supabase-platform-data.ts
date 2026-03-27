@@ -41,6 +41,7 @@ import {
   type WorkspaceIntegrationView
 } from "./operating-data";
 import { createSupabaseAdminClient, canUseSupabaseAdmin } from "./supabase-admin";
+import { shouldEnforceSupabaseHostedAccess } from "./supabase-env";
 import type { WorkspaceIntegration, WorkspaceRole } from "./workspace";
 import { formatWorkspaceRole } from "./workspace";
 import { getWorkspaceBrand, getWorkspaceMembers } from "./workspace-data";
@@ -705,7 +706,7 @@ async function upsertSupabaseIntegration(
 export async function listPlatformIntegrationViews(
   brandId: string
 ): Promise<WorkspaceIntegrationView[]> {
-  const fallbackItems = safeListIntegrationViews(brandId);
+  const fallbackItems = shouldEnforceSupabaseHostedAccess() ? [] : safeListIntegrationViews(brandId);
   const supabaseState = await listSupabaseIntegrationRows(brandId);
   const providerIds = new Set<string>([
     ...Object.keys(providerMetadata),
@@ -756,7 +757,7 @@ export async function listPlatformIntegrationViews(
 export async function listPlatformCommerceStores(
   brandId: string
 ): Promise<CommerceStoreView[]> {
-  const fallbackItems = safeListStores(brandId);
+  const fallbackItems = shouldEnforceSupabaseHostedAccess() ? [] : safeListStores(brandId);
   const supabaseState = await listSupabaseStoreRows(brandId);
   const supabaseItems = (supabaseState?.rows ?? []).map(buildStoreView);
 
@@ -768,6 +769,14 @@ export async function listPlatformCommerceStores(
 export async function getPlatformPrimaryShopifyStore(
   brandId: string
 ): Promise<CommerceStoreView | null> {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    return (
+      (await listPlatformCommerceStores(brandId)).find(
+        (store) => store.platform === "shopify"
+      ) ?? null
+    );
+  }
+
   return (
     (await listPlatformCommerceStores(brandId)).find((store) => store.platform === "shopify") ??
     getPrimaryShopifyStore(brandId) ??
@@ -779,7 +788,9 @@ export async function listPlatformProviderSyncRuns(
   brandId: string,
   provider: string
 ): Promise<CommerceSyncRunView[]> {
-  const fallbackItems = safeListSyncRuns(brandId, provider);
+  const fallbackItems = shouldEnforceSupabaseHostedAccess()
+    ? []
+    : safeListSyncRuns(brandId, provider);
   const supabaseState = await listSupabaseSyncRunRows(brandId, provider);
   const supabaseItems = (supabaseState?.rows ?? []).map(buildSyncRunView);
 

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getAppRepository } from "./app-repository";
+import { shouldEnforceSupabaseHostedAccess } from "./supabase-env";
 import { getSupabaseWorkspaceContext } from "./supabase-workspace-auth";
 import type {
   AccessibleWorkspace,
@@ -152,6 +153,12 @@ export async function getWorkspaceContextAsync(
     };
   }
 
+  if (shouldEnforceSupabaseHostedAccess()) {
+    throw new Error(
+      `Hosted workspace context for brand "${brandId}" is unavailable from Supabase.`
+    );
+  }
+
   return getWorkspaceContext(brandId, activeUserIdOrEmail);
 }
 
@@ -171,6 +178,10 @@ export function getWorkspaceSummary(brandId: string, activeUserId?: string) {
 }
 
 export function getLoginWorkspaceOptions(): WorkspaceLoginOption[] {
+  if (shouldEnforceSupabaseHostedAccess()) {
+    return [];
+  }
+
   return listWorkspaceUsers()
     .map((user) => {
       const accessibleBrands = getAccessibleBrandsForUser(user.id);
