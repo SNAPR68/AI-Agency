@@ -36,22 +36,26 @@ type WorkspacePageProps = {
 
 export function WorkspacePage({ model, children }: WorkspacePageProps) {
   return (
-    <div className="page-stack">
-      <section className="surface-card page-header-card">
-        <div className="page-header-meta">
-          <p className="kicker">{model.kicker}</p>
-          <h1 className="page-title">{model.title}</h1>
-          <p className="page-copy">{model.description}</p>
+    <div className="workspace-page">
+      <section className="workspace-page-header">
+        <div className="workspace-page-header-copy">
+          <p className="workspace-page-kicker">{model.kicker}</p>
+          <h1 className="workspace-page-title">{model.title}</h1>
+          <p className="workspace-page-description">{model.description}</p>
           {model.notice ? <div className="message-banner">{model.notice}</div> : null}
         </div>
 
         {model.actions && model.actions.length > 0 ? (
-          <div className="page-actions">
-            {model.actions.map((action) => (
+          <div className="workspace-page-actions">
+            {model.actions.map((action, index) => (
               <Link
                 key={`${action.href}-${action.label}`}
                 className={
-                  action.tone === "secondary" ? "button-link-secondary" : "button-link"
+                  action.tone === "secondary"
+                    ? "workspace-page-button-secondary"
+                    : index === 0
+                      ? "workspace-page-button-primary"
+                      : "workspace-page-button-secondary"
                 }
                 href={action.href}
               >
@@ -63,12 +67,12 @@ export function WorkspacePage({ model, children }: WorkspacePageProps) {
       </section>
 
       {model.stats && model.stats.length > 0 ? (
-        <section className="stats-grid">
+        <section className="workspace-kpi-strip">
           {model.stats.map((stat) => (
-            <article key={stat.label} className="stat-card">
-              <p className="stat-label">{stat.label}</p>
-              <p className="stat-value">{stat.value}</p>
-              <p className="stat-note">{stat.note}</p>
+            <article key={stat.label} className="workspace-kpi-card">
+              <p className="workspace-kpi-label">{stat.label}</p>
+              <p className="workspace-kpi-value">{stat.value}</p>
+              <p className="workspace-kpi-note">{stat.note}</p>
             </article>
           ))}
         </section>

@@ -1,8 +1,4 @@
-import {
-  EditorialListPanel,
-  type PresentationTone
-} from "../../../../components/data-presentation";
-import { WorkspacePage } from "../../../../components/workspace-page";
+import Link from "next/link";
 import { getWorkspaceOverviewAsync } from "../../../../lib/operating-data";
 
 type BrandOverviewPageProps = {
@@ -11,32 +7,24 @@ type BrandOverviewPageProps = {
   }>;
 };
 
-function statusTone(status: string): PresentationTone {
-  if (status === "connected") {
-    return "positive";
+function mapKpiAccent(index: number) {
+  if (index === 0) {
+    return "secondary";
   }
 
-  if (status === "degraded") {
-    return "warning";
+  if (index === 1) {
+    return "primary";
   }
 
-  return "info";
+  if (index === 2) {
+    return "muted";
+  }
+
+  return "secondary";
 }
 
-function workflowTone(tone: string): PresentationTone {
-  if (tone === "positive") {
-    return "positive";
-  }
-
-  if (tone === "danger") {
-    return "danger";
-  }
-
-  if (tone === "warning") {
-    return "warning";
-  }
-
-  return "info";
+function mapSignalIcon(index: number) {
+  return ["trending_up", "inventory_2", "campaign", "bolt"][index] ?? "insights";
 }
 
 export default async function BrandOverviewPage({
@@ -44,167 +32,181 @@ export default async function BrandOverviewPage({
 }: BrandOverviewPageProps) {
   const { brandId } = await params;
   const overview = await getWorkspaceOverviewAsync(brandId);
+  const kpis = overview.kpis.slice(0, 4);
+  const changeSignals = [...overview.risks.slice(0, 2), ...overview.wins.slice(0, 2)].slice(
+    0,
+    4
+  );
+  const syncHealth = overview.syncHealth.slice(0, 4);
+  const quickLinks = [
+    {
+      label: "Product Performance",
+      href: `/brands/${brandId}/products`
+    },
+    {
+      label: "Customer Cohorts",
+      href: `/brands/${brandId}/retention`
+    },
+    {
+      label: "Campaign Deep-Dive",
+      href: `/brands/${brandId}/campaigns`
+    },
+    {
+      label: "Support Signals",
+      href: `/brands/${brandId}/support-ops`
+    }
+  ];
 
   return (
-    <WorkspacePage
-      model={{
-        kicker: "Overview",
-        title: "Weekly command center",
-        description: overview.description,
-        actions: [
-          {
-            label: "Generate Weekly Brief",
-            href: `/brands/${brandId}/briefs/latest`
-          },
-          {
-            label: "Sync Data",
-            href: `/brands/${brandId}/settings/integrations`,
-            tone: "secondary"
-          },
-          {
-            label: "View Opportunities",
-            href: `/brands/${brandId}/opportunities`,
-            tone: "secondary"
-          },
-          {
-            label: "Open Alerts",
-            href: `/brands/${brandId}/alerts`,
-            tone: "secondary"
-          }
-        ],
-        stats: [
-          ...overview.kpis.map((kpi) => ({
-            label: kpi.label,
-            value: kpi.value,
-            note: `${kpi.delta} · ${kpi.note}`
-          })),
-          {
-            label: "Pending approvals",
-            value: `${overview.pendingApprovals}`,
-            note: "Drafts waiting for a review decision before they can move to publishing."
-          },
-          {
-            label: "Publish failures",
-            value: `${overview.publishFailures}`,
-            note: "Operational delivery issues currently affecting trust in the publish queue."
-          }
-        ]
-      }}
-    >
-      <section className="editorial-layout">
-        <div className="editorial-main">
-          <EditorialListPanel
-            label="What Changed This Week"
-            title="Main ledger movement"
-            description="The command center now reads like an operating brief: what moved, where confidence sits, and which decisions deserve attention first."
-            items={overview.kpis.map((kpi) => ({
-              eyebrow: "Live feed",
-              title: kpi.label,
-              description: kpi.note,
-              value: kpi.value,
-              note: kpi.delta
-            }))}
-            tone="warm"
-          />
-
-          <section className="editorial-focus-grid">
-            <EditorialListPanel
-              label="Top Wins"
-              title="What is compounding"
-              description="Signals worth leaning into while the board is supportive."
-              items={overview.wins.map((win) => ({
-                eyebrow: "Winning signal",
-                title: win.title,
-                description: win.description,
-                tags: [{ label: "Positive", tone: "positive" }]
-              }))}
-            />
-
-            <EditorialListPanel
-              label="Top Risks"
-              title="What needs intervention"
-              description="These are the problems most likely to slow revenue, trust, or workflow momentum."
-              items={overview.risks.map((risk) => ({
-                eyebrow: "Needs attention",
-                title: risk.title,
-                description: risk.description,
-                tags: [{ label: "Risk", tone: "warning" }]
-              }))}
-            />
-          </section>
-
-          <EditorialListPanel
-            label="Recommended Next Actions"
-            title="Moves the team should make next"
-            description="Concrete work that should leave the command center and flow into content, product, or operations."
-            items={overview.nextActions.map((action) => ({
-              eyebrow: action.owner,
-              title: action.title,
-              description: action.description,
-              value: action.dueLabel,
-              note: "Due",
-              tags: [
-                { label: action.owner, tone: "info" },
-                { label: action.dueLabel, tone: "neutral" }
-              ],
-              actions: [
-                {
-                  label: "Open workflow",
-                  href: action.href,
-                  tone: "secondary"
-                }
-              ]
-            }))}
-          />
+    <div className="ledger-page">
+      <section className="ledger-header">
+        <div className="ledger-header-copy">
+          <p className="ledger-header-kicker">Operational Overview</p>
+          <h1 className="ledger-header-title">Main Ledger</h1>
+          <p className="ledger-header-description">{overview.description}</p>
         </div>
 
-        <aside className="editorial-rail">
-          <EditorialListPanel
-            label="Workflow"
-            title="Operating pulse"
-            description="Approvals and publishing pressure should be visible next to the numbers, not hidden in a separate tab."
-            items={overview.workflowPulse.map((signal) => ({
-              eyebrow: "Workflow",
-              title: signal.title,
-              description: signal.description,
-              tags: [{ label: "Workflow", tone: workflowTone(signal.tone) }],
-              actions: [
-                {
-                  label: signal.actionLabel,
-                  href: signal.href,
-                  tone: "secondary"
-                }
-              ]
-            }))}
-            tone="ink"
-            emptyMessage="No approval or publishing pressure is active right now."
-          />
-
-          <EditorialListPanel
-            label="Data Systems"
-            title="Sync integrity"
-            description="The team should know how fresh the data is before making a call from the dashboard."
-            items={overview.syncHealth.map((integration) => ({
-              eyebrow: integration.label,
-              title: integration.accountLabel,
-              description: `${integration.coverage}. ${integration.note}`,
-              value: integration.lastSyncedLabel,
-              note: "Last synced",
-              tags: [
-                { label: integration.status, tone: statusTone(integration.status) }
-              ],
-              actions: [
-                {
-                  label: integration.actionLabel,
-                  href: `/brands/${brandId}/settings/integrations`,
-                  tone: "secondary"
-                }
-              ]
-            }))}
-            tone="ink"
-          />
-        </aside>
+        <div className="ledger-header-actions">
+          <Link className="ledger-primary-action" href={`/brands/${brandId}/briefs/latest`}>
+            Generate Weekly Brief
+            <span className="material-symbols-outlined">auto_awesome</span>
+          </Link>
+        </div>
       </section>
-    </WorkspacePage>
+
+      <section className="ledger-kpi-strip">
+        {kpis.map((kpi, index) => (
+          <article
+            key={kpi.label}
+            className="ledger-kpi-card"
+            data-accent={mapKpiAccent(index)}
+          >
+            <div className="ledger-kpi-head">
+              <span className="ledger-kpi-label">{kpi.label}</span>
+              <span className="material-symbols-outlined">{mapSignalIcon(index)}</span>
+            </div>
+            <p className="ledger-kpi-value">{kpi.value}</p>
+            <p className="ledger-kpi-delta">{kpi.delta}</p>
+            <p className="ledger-kpi-note">{kpi.note}</p>
+          </article>
+        ))}
+      </section>
+
+      <div className="ledger-grid">
+        <section className="ledger-panel ledger-panel-wide">
+          <div className="ledger-panel-head">
+            <h2 className="ledger-panel-title">What Changed This Week</h2>
+            <span className="ledger-panel-pill">Live Feed</span>
+          </div>
+          <div className="ledger-feed">
+            {changeSignals.map((signal, index) => (
+              <article key={signal.title} className="ledger-feed-item">
+                <div className="ledger-feed-icon" data-tone={index < 2 ? "warning" : "positive"}>
+                  <span className="material-symbols-outlined">
+                    {index < 2 ? "warning" : "trending_up"}
+                  </span>
+                </div>
+                <div className="ledger-feed-copy">
+                  <p className="ledger-feed-title">{signal.title}</p>
+                  <p className="ledger-feed-description">{signal.description}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <aside className="ledger-panel ledger-panel-dark">
+          <div>
+            <div className="ledger-system-state">
+              <span className="ledger-system-state-dot" />
+              <span>Data Systems Nominal</span>
+            </div>
+            <h2 className="ledger-panel-title">Sync Integrity</h2>
+            <p className="ledger-panel-description">
+              The team should know the data is fresh before trusting what changed.
+            </p>
+          </div>
+
+          <div className="ledger-system-list">
+            {syncHealth.map((integration) => (
+              <div key={integration.provider} className="ledger-system-row">
+                <span>{integration.label}</span>
+                <span>{integration.lastSyncedLabel}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="ledger-health-meter">
+            <div className="ledger-health-meter-bar" />
+          </div>
+        </aside>
+
+        <section className="ledger-panel">
+          <h2 className="ledger-panel-title ledger-panel-title-positive">Top Wins</h2>
+          <ul className="ledger-bullet-list">
+            {overview.wins.slice(0, 3).map((win) => (
+              <li key={win.title}>
+                <span className="ledger-bullet ledger-bullet-positive">●</span>
+                <span>{win.description}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="ledger-panel">
+          <h2 className="ledger-panel-title ledger-panel-title-danger">Top Risks</h2>
+          <ul className="ledger-bullet-list">
+            {overview.risks.slice(0, 3).map((risk) => (
+              <li key={risk.title}>
+                <span className="ledger-bullet ledger-bullet-danger">●</span>
+                <span>{risk.description}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="ledger-actions-section">
+          <h2 className="ledger-panel-title">Recommended Next Actions</h2>
+          <div className="ledger-action-grid">
+            {overview.nextActions.slice(0, 3).map((action, index) => (
+              <Link
+                key={action.title}
+                className="ledger-action-card"
+                data-tone={index === 0 ? "warm" : "neutral"}
+                href={action.href}
+              >
+                <div className="ledger-action-head">
+                  <span className="material-symbols-outlined">
+                    {index === 0 ? "inventory" : index === 1 ? "ads_click" : "psychology"}
+                  </span>
+                  <span className="ledger-action-label">
+                    {index === 0 ? "Urgent" : index === 1 ? "Marketing" : "Strategy"}
+                  </span>
+                </div>
+                <h3 className="ledger-action-title">{action.title}</h3>
+                <p className="ledger-action-description">{action.description}</p>
+                <span className="ledger-action-link">
+                  Open workflow
+                  <span className="material-symbols-outlined">arrow_forward</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="ledger-quick-links">
+          <span className="ledger-quick-links-label">Deeper Context</span>
+          {quickLinks.map((link, index) => (
+            <div key={link.href} className="ledger-quick-link-wrap">
+              <Link className="ledger-quick-link" href={link.href}>
+                {link.label}
+                <span className="material-symbols-outlined">open_in_new</span>
+              </Link>
+              {index < quickLinks.length - 1 ? <span className="ledger-quick-link-sep">/</span> : null}
+            </div>
+          ))}
+        </section>
+      </div>
+    </div>
   );
 }
