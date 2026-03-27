@@ -4,6 +4,10 @@ import {
 } from "../../../../components/data-presentation";
 import { WorkspacePage } from "../../../../components/workspace-page";
 import {
+  getHostedWriteDisabledMessage,
+  hostedWriteDisabledErrorCode
+} from "../../../../lib/session";
+import {
   getWorkflowNarrativeAsync,
   listBrandOpportunitiesAsync
 } from "../../../../lib/growth-workflow-data";
@@ -11,6 +15,9 @@ import {
 type OpportunitiesPageProps = {
   params: Promise<{
     brandId: string;
+  }>;
+  searchParams: Promise<{
+    error?: string;
   }>;
 };
 
@@ -27,9 +34,11 @@ function toneForStatus(status: string): PresentationTone {
 }
 
 export default async function OpportunitiesPage({
-  params
+  params,
+  searchParams
 }: OpportunitiesPageProps) {
   const { brandId } = await params;
+  const { error } = await searchParams;
   const opportunities = await listBrandOpportunitiesAsync(brandId);
 
   return (
@@ -38,6 +47,8 @@ export default async function OpportunitiesPage({
         kicker: "Opportunities",
         title: "Prioritized growth queue",
         description: await getWorkflowNarrativeAsync(brandId),
+        notice:
+          error === hostedWriteDisabledErrorCode ? getHostedWriteDisabledMessage() : undefined,
         actions: [
           {
             label: "Open Products",

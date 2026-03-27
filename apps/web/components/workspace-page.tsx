@@ -23,6 +23,7 @@ export type WorkspacePageModel = {
   kicker: string;
   title: string;
   description: string;
+  notice?: string;
   actions?: WorkspaceAction[];
   stats?: WorkspaceStat[];
   cards?: WorkspaceCard[];
@@ -41,6 +42,7 @@ export function WorkspacePage({ model, children }: WorkspacePageProps) {
           <p className="kicker">{model.kicker}</p>
           <h1 className="page-title">{model.title}</h1>
           <p className="page-copy">{model.description}</p>
+          {model.notice ? <div className="message-banner">{model.notice}</div> : null}
         </div>
 
         {model.actions && model.actions.length > 0 ? (

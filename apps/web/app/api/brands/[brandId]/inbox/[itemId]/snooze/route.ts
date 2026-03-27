@@ -4,7 +4,8 @@ import {
   authHasBrandAccess,
   buildLoginPath,
   getAuthenticatedAppState,
-  isSafeRedirectPath
+  isSafeRedirectPath,
+  redirectIfHostedWorkflowMutationUnavailable
 } from "../../../../../../../lib/session";
 
 type InboxActionRouteProps = {
@@ -29,6 +30,16 @@ export async function POST(request: NextRequest, { params }: InboxActionRoutePro
       new URL(`/brands/${auth.defaultBrandId}/overview`, request.url),
       303
     );
+  }
+
+  const hostedMutationRedirect = redirectIfHostedWorkflowMutationUnavailable(
+    request,
+    nextPath,
+    `/brands/${brandId}/inbox`
+  );
+
+  if (hostedMutationRedirect) {
+    return hostedMutationRedirect;
   }
 
   snoozeInboxItem(brandId, itemId);

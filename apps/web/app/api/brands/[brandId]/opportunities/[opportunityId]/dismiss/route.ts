@@ -4,7 +4,8 @@ import {
   authHasBrandAccess,
   buildLoginPath,
   getAuthenticatedAppState,
-  isSafeRedirectPath
+  isSafeRedirectPath,
+  redirectIfHostedWorkflowMutationUnavailable
 } from "../../../../../../../lib/session";
 
 type OpportunityActionRouteProps = {
@@ -32,6 +33,16 @@ export async function POST(
       new URL(`/brands/${auth.defaultBrandId}/overview`, request.url),
       303
     );
+  }
+
+  const hostedMutationRedirect = redirectIfHostedWorkflowMutationUnavailable(
+    request,
+    nextPath,
+    `/brands/${brandId}/opportunities`
+  );
+
+  if (hostedMutationRedirect) {
+    return hostedMutationRedirect;
   }
 
   setOpportunityStatus(brandId, opportunityId, "dismissed");

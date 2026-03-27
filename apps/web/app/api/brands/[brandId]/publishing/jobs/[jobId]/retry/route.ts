@@ -4,7 +4,8 @@ import {
   authHasBrandAccess,
   buildLoginPath,
   getAuthenticatedAppState,
-  isSafeRedirectPath
+  isSafeRedirectPath,
+  redirectIfHostedWorkflowMutationUnavailable
 } from "../../../../../../../../lib/session";
 
 type PublishingJobRouteProps = {
@@ -32,6 +33,16 @@ export async function POST(
       new URL(`/brands/${auth.defaultBrandId}/overview`, request.url),
       303
     );
+  }
+
+  const hostedMutationRedirect = redirectIfHostedWorkflowMutationUnavailable(
+    request,
+    nextPath,
+    `/brands/${brandId}/publishing`
+  );
+
+  if (hostedMutationRedirect) {
+    return hostedMutationRedirect;
   }
 
   retryPublishJob(brandId, jobId);

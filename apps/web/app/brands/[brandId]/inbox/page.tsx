@@ -3,11 +3,18 @@ import {
   type PresentationTone
 } from "../../../../components/data-presentation";
 import { WorkspacePage } from "../../../../components/workspace-page";
+import {
+  getHostedWriteDisabledMessage,
+  hostedWriteDisabledErrorCode
+} from "../../../../lib/session";
 import { listWorkspaceInboxItemsAsync } from "../../../../lib/operating-data";
 
 type InboxPageProps = {
   params: Promise<{
     brandId: string;
+  }>;
+  searchParams: Promise<{
+    error?: string;
   }>;
 };
 
@@ -27,8 +34,12 @@ function kindTone(kind: string): PresentationTone {
   return "neutral";
 }
 
-export default async function InboxPage({ params }: InboxPageProps) {
+export default async function InboxPage({
+  params,
+  searchParams
+}: InboxPageProps) {
   const { brandId } = await params;
+  const { error } = await searchParams;
   const items = await listWorkspaceInboxItemsAsync(brandId);
   const priorityItems = items.filter(
     (item) => item.state === "needs_review" || item.state === "open"
@@ -44,6 +55,8 @@ export default async function InboxPage({ params }: InboxPageProps) {
         title: "Everything that needs a response",
         description:
           "The inbox centralizes approvals, alerts, delivered briefs, and operational reminders so the team always knows what requires attention next.",
+        notice:
+          error === hostedWriteDisabledErrorCode ? getHostedWriteDisabledMessage() : undefined,
         actions: [
           {
             label: "Open Approvals",

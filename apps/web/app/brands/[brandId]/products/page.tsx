@@ -4,6 +4,10 @@ import {
 } from "../../../../components/data-presentation";
 import { WorkspacePage } from "../../../../components/workspace-page";
 import {
+  getHostedWriteDisabledMessage,
+  hostedWriteDisabledErrorCode
+} from "../../../../lib/session";
+import {
   getWorkflowNarrativeAsync,
   listBrandProductsAsync
 } from "../../../../lib/growth-workflow-data";
@@ -11,6 +15,9 @@ import {
 type ProductsPageProps = {
   params: Promise<{
     brandId: string;
+  }>;
+  searchParams: Promise<{
+    error?: string;
   }>;
 };
 
@@ -26,8 +33,12 @@ function productTone(status: string): PresentationTone {
   return "neutral";
 }
 
-export default async function ProductsPage({ params }: ProductsPageProps) {
+export default async function ProductsPage({
+  params,
+  searchParams
+}: ProductsPageProps) {
   const { brandId } = await params;
+  const { error } = await searchParams;
   const products = await listBrandProductsAsync(brandId);
 
   return (
@@ -36,6 +47,8 @@ export default async function ProductsPage({ params }: ProductsPageProps) {
         kicker: "Products",
         title: "Product priority board",
         description: await getWorkflowNarrativeAsync(brandId),
+        notice:
+          error === hostedWriteDisabledErrorCode ? getHostedWriteDisabledMessage() : undefined,
         actions: [
           {
             label: "Generate Hooks",
