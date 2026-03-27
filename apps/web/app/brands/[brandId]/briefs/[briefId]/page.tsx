@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { getWorkspaceBriefAsync } from "../../../../../lib/operating-data";
 
 type WeeklyBriefPageProps = {
@@ -18,74 +18,73 @@ export default async function WeeklyBriefPage({ params }: WeeklyBriefPageProps) 
   }
 
   return (
-    <div className="brief-story-page">
-      <header className="brief-story-header">
-        <div className="brief-story-header-copy">
+    <section className="brief-suite">
+      <header className="brief-suite-header">
+        <div>
           <p className="command-kicker">Internal Executive Briefing</p>
-          <h1 className="brief-story-display">
+          <h1>
             Weekly Performance Brief:
             <br />
             <span>{brief.weekLabel}</span>
           </h1>
-          <p className="brief-story-subtitle">
-            Generated for {brief.audience} • {brief.status}
+          <p className="brief-suite-subtitle">
+            Generated for {brief.audience} · {brief.status}
           </p>
         </div>
 
-        <div className="command-actions">
-          <Link className="command-secondary-button" href={`/brands/${brandId}/reports`}>
+        <div className="command-header-actions">
+          <Link className="button-link-secondary" href={`/brands/${brandId}/reports`}>
             Share Brief
           </Link>
-          <Link className="command-secondary-button" href={`/brands/${brandId}/content`}>
+          <Link className="button-link-secondary" href={`/brands/${brandId}/content`}>
             Create Content Plan
           </Link>
-          <Link className="command-primary-button" href={`/brands/${brandId}/briefs`}>
+          <Link className="button-link" href={`/brands/${brandId}/briefs`}>
             Mark Reviewed
           </Link>
         </div>
       </header>
 
-      <section className="brief-hero-grid">
-        <article className="brief-summary-card">
-          <p className="command-mini-kicker">Executive Summary</p>
-          <div className="brief-summary-copy">
+      <section className="brief-suite-hero">
+        <article className="brief-suite-summary">
+          <p className="editorial-section-label">Executive Summary</p>
+          <div className="brief-suite-summary-copy">
             <p>{brief.summary}</p>
             <p>
-              This is the founder-ready operating narrative: what changed, why it
-              changed, and where the team should place its attention next.
+              This is the founder-ready operating narrative: what changed, why it changed, and where the team should
+              place its attention next.
             </p>
           </div>
         </article>
 
-        <aside className="brief-kpi-stack">
-          <article className="brief-kpi-card brief-kpi-card-large">
-            <p className="command-mini-kicker">Status</p>
-            <p className="brief-kpi-value">{brief.status}</p>
-            <p className="brief-kpi-note">{brief.audience}</p>
+        <aside className="brief-suite-kpis">
+          <article className="brief-suite-kpi brief-suite-kpi-large">
+            <span>Status</span>
+            <strong>{brief.status}</strong>
+            <p>{brief.audience}</p>
           </article>
-          <article className="brief-kpi-card">
-            <p className="command-mini-kicker">Highlights</p>
-            <p className="brief-kpi-value">{brief.highlightsCount}</p>
-            <p className="brief-kpi-note">Wins and risks captured</p>
+          <article className="brief-suite-kpi">
+            <span>Highlights</span>
+            <strong>{brief.highlightsCount}</strong>
+            <p>Wins and risks captured</p>
           </article>
-          <article className="brief-kpi-card">
-            <p className="command-mini-kicker">Next actions</p>
-            <p className="brief-kpi-value">{brief.actionsCount}</p>
-            <p className="brief-kpi-note">Follow-up items in the cycle</p>
+          <article className="brief-suite-kpi">
+            <span>Next actions</span>
+            <strong>{brief.actionsCount}</strong>
+            <p>Follow-up items in the cycle</p>
           </article>
         </aside>
       </section>
 
-      <section className="brief-columns">
-        <div className="brief-column">
-          <div className="brief-section-heading" data-tone="positive">
-            <span className="brief-section-line" />
+      <section className="brief-suite-columns">
+        <div className="brief-suite-column">
+          <div className="brief-suite-column-head" data-tone="positive">
+            <span />
             <h2>The Wins</h2>
           </div>
-
-          <div className="brief-story-list">
+          <div className="brief-suite-list">
             {brief.topWins.map((item) => (
-              <article key={item.title} className="brief-story-item">
+              <article key={item.title} className="brief-suite-item">
                 <h3>{item.title}</h3>
                 <p>{item.description}</p>
               </article>
@@ -93,15 +92,14 @@ export default async function WeeklyBriefPage({ params }: WeeklyBriefPageProps) 
           </div>
         </div>
 
-        <div className="brief-column">
-          <div className="brief-section-heading" data-tone="danger">
-            <span className="brief-section-line" />
+        <div className="brief-suite-column">
+          <div className="brief-suite-column-head" data-tone="danger">
+            <span />
             <h2>The Risks</h2>
           </div>
-
-          <div className="brief-story-list">
+          <div className="brief-suite-list">
             {brief.topRisks.map((item) => (
-              <article key={item.title} className="brief-story-item">
+              <article key={item.title} className="brief-suite-item">
                 <h3>{item.title}</h3>
                 <p>{item.description}</p>
               </article>
@@ -110,23 +108,25 @@ export default async function WeeklyBriefPage({ params }: WeeklyBriefPageProps) 
         </div>
       </section>
 
-      <section className="brief-analysis-panel">
-        <p className="command-mini-kicker">What Changed &amp; Why</p>
-        <div className="brief-analysis-grid">
-          <div className="brief-analysis-list">
+      <section className="brief-suite-analysis">
+        <div className="brief-suite-analysis-main">
+          <p className="editorial-section-label">What Changed &amp; Why</p>
+          <div className="brief-suite-analysis-grid">
             {brief.whyItChanged.map((item) => (
-              <article key={item.title} className="brief-analysis-item">
+              <article key={item.title} className="brief-suite-analysis-item">
                 <h3>{item.title}</h3>
                 <p>{item.description}</p>
               </article>
             ))}
           </div>
+        </div>
 
-          <div className="brief-actions-stack">
-            <p className="command-mini-kicker">Recommended next actions</p>
+        <aside className="brief-suite-actions">
+          <p className="editorial-section-label">Recommended Next Actions</p>
+          <div className="brief-suite-actions-list">
             {brief.nextActions.map((item) => (
-              <Link key={item.title} className="brief-action-card" href={item.href}>
-                <div className="brief-action-head">
+              <Link key={item.title} className="brief-suite-action-card" href={item.href}>
+                <div className="brief-suite-action-head">
                   <span className="status-chip" data-tone="info">
                     {item.owner}
                   </span>
@@ -136,14 +136,12 @@ export default async function WeeklyBriefPage({ params }: WeeklyBriefPageProps) 
                 </div>
                 <h3>{item.title}</h3>
                 <p>{item.description}</p>
-                <span className="command-inline-link">
-                  Open workflow
-                </span>
+                <span className="workflow-inline-action">Open workflow</span>
               </Link>
             ))}
           </div>
-        </div>
+        </aside>
       </section>
-    </div>
+    </section>
   );
 }
