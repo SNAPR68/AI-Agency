@@ -1,13 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getDefaultBrandPath } from "../lib/navigation";
 import { getAuthenticatedAppState } from "../lib/session";
 import { getRuntimeHealthStatus } from "../lib/runtime-health";
-import { formatWorkspaceRole } from "../lib/workspace";
 
 export default async function HomePage() {
   const auth = await getAuthenticatedAppState();
   const runtime = getRuntimeHealthStatus();
-  const primaryBrandPath = auth ? getDefaultBrandPath(auth.session.brandId) : "/login";
+
+  if (auth) {
+    redirect(getDefaultBrandPath(auth.session.brandId));
+  }
+
   const workflowSteps = [
     {
       title: "Signal",
@@ -39,8 +43,8 @@ export default async function HomePage() {
             <Link className="button-link-secondary" href="/login">
               Sign In
             </Link>
-            <Link className="button-link" href={primaryBrandPath}>
-              {auth ? "Continue to Workspace" : "View Sample Workspace"}
+            <Link className="button-link" href="/login">
+              View Sample Workspace
             </Link>
           </div>
         </section>
@@ -60,22 +64,13 @@ export default async function HomePage() {
             </div>
 
             <div className="hero-actions">
-              <Link className="button-link" href={primaryBrandPath}>
-                {auth ? "Continue to Workspace" : "Request Demo"}
+              <Link className="button-link" href="/login">
+                Request Demo
               </Link>
               <Link className="button-link-secondary" href="/login">
-                {auth ? "Switch Workspace" : "Sign In"}
+                Sign In
               </Link>
             </div>
-
-            {auth ? (
-              <div className="message-banner">
-                Signed in as {auth.user.name} (
-                {formatWorkspaceRole(auth.accessibleBrands[0].role)}) with access to{" "}
-                {auth.accessibleBrands.length} workspace
-                {auth.accessibleBrands.length === 1 ? "" : "s"}.
-              </div>
-            ) : null}
 
             <div className="hero-metric-grid">
               <article className="stat-card">
